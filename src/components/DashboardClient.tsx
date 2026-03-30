@@ -126,7 +126,7 @@ export default function DashboardClient({ user }: { user: User }) {
     <div style={{ minHeight: "100vh", display: "flex", background: theme.bg1, color: tx, fontFamily: "var(--ff)", transition: "background 1s, color 0.5s" }}>
 
       {/* ══════════════════════════════════════
-          POSTER SIDEBAR — 260px fixed left
+          POSTER SIDEBAR - 260px fixed left
       ══════════════════════════════════════ */}
       <div style={{
         position: "fixed", left: 0, top: 0, bottom: 0, width: 260,
@@ -192,7 +192,7 @@ export default function DashboardClient({ user }: { user: User }) {
       </div>
 
       {/* ══════════════════════════════════════
-          MAIN — everything right of poster
+          MAIN - everything right of poster
       ══════════════════════════════════════ */}
       <div style={{ flex: 1, marginLeft: 260, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
 
@@ -242,7 +242,7 @@ export default function DashboardClient({ user }: { user: User }) {
             {/* HERO */}
             <section style={{ padding: "clamp(2.5rem,5vw,4.5rem) 1.75rem clamp(2rem,4vw,3.5rem)", borderBottom: `1px solid ${bd}`, position: "relative" }}>
               <div style={{ position: "absolute", top: 0, right: 0, width: "40%", height: "100%", background: `radial-gradient(ellipse at right, ${gl.replace("0.24","0.07")} 0%, transparent 70%)`, pointerEvents: "none" }} />
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1.5rem" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1.5rem", maxWidth: 900 }}>
                 <div className="fade-up">
                   <p style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: mu, marginBottom: 16, fontWeight: 700 }}>
                     {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
@@ -259,16 +259,16 @@ export default function DashboardClient({ user }: { user: User }) {
                   </p>
                 </div>
 
-                {/* Profile — stacked top right */}
-                <div className="fade-up-2" style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
-                  <div style={{ width: 68, height: 68, borderRadius: 16, overflow: "hidden", border: `2px solid ${acc}44`, boxShadow: `0 0 24px ${gl}`, background: theme.bg2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, color: acc }}>
+                {/* Profile - stacked top right, constrained width */}
+                <div className="fade-up-2" style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, maxWidth: 180 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: 14, overflow: "hidden", border: `2px solid ${acc}44`, boxShadow: `0 0 24px ${gl}`, background: theme.bg2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: acc, flexShrink: 0 }}>
                     {user.image
-                      ? <img src={user.image + "?sz=136"} alt="profile" referrerPolicy="no-referrer" style={{ width: 68, height: 68, objectFit: "cover", display: "block" }} />
+                      ? <img src={user.image + "?sz=128"} alt="profile" referrerPolicy="no-referrer" style={{ width: 64, height: 64, objectFit: "cover", display: "block" }} />
                       : (user.name?.[0] ?? "?")}
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ fontFamily: "var(--fp)", fontSize: 15, fontWeight: 700, color: tx, marginBottom: 2 }}>{user.name}</p>
-                    <p style={{ fontSize: 11, color: mu }}>{user.email}</p>
+                  <div style={{ textAlign: "right", minWidth: 0, width: "100%" }}>
+                    <p style={{ fontFamily: "var(--fp)", fontSize: 14, fontWeight: 700, color: tx, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</p>
+                    <p style={{ fontSize: 10, color: mu, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
                   </div>
                 </div>
               </div>
@@ -453,7 +453,7 @@ export default function DashboardClient({ user }: { user: User }) {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "1rem" }}>
                 {[
                   { n: "01", t: "Sign in securely",  d: "Google OAuth handles auth. We only access your name, email and profile photo." },
-                  { n: "02", t: "Save your film",    d: "Enter your favourite film. The theme transforms to match your movie's genre — every color derived from the poster." },
+                  { n: "02", t: "Save your film",    d: "Enter your favourite film. The theme transforms to match your movie's genre - every color derived from the poster." },
                   { n: "03", t: "Discover AI facts", d: "GPT-4o mini generates little-known cinematic facts. 60s server cache + 30s client cache." },
                 ].map((s, i) => (
                   <div key={s.n} style={glass}>

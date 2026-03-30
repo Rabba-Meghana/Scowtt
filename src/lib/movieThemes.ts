@@ -2,7 +2,7 @@
  * movieThemes.ts
  *
  * Each theme is defined by ONE poster gradient (3 stops).
- * ALL other UI colors are algorithmically derived from those stops — nothing else is hardcoded.
+ * ALL other UI colors are algorithmically derived from those stops - nothing else is hardcoded.
  *
  * Poster stops:  [deep-shadow, mid-tone, accent-highlight]
  * From these we derive: bg1, bg2, card, accent, glow, text, muted, border
@@ -34,7 +34,7 @@ function makeTheme(p0: string, p1: string, p2: string, label: string): MovieThem
     bg2:    p1,                                     // secondary bg = mid poster stop
     accent: p2,                                     // accent = highlight poster stop
     glow:   hexToRgba(p2, 0.24),                    // glow = accent at 24% opacity
-    text:   "#F0EAE0",                              // always near-white — readable on any dark bg
+    text:   "#F0EAE0",                              // always near-white - readable on any dark bg
     muted:  blendHex(p2, "#606060", 0.3),           // muted = 30% accent + 70% grey
     border: hexToRgba(p2, 0.18),                    // border = accent at 18% opacity
     card:   hexToRgba(blendHex(p0, p1, 0.4), 0.78),// card = blend of bg stops at 78% opacity
@@ -76,23 +76,23 @@ function hexToRgba(hex: string, a: number): string {
 const THEMES: Record<string, MovieTheme> = {
   // Gold / prestige drama
   drama:     makeTheme("#080502", "#1C0E03", "#C9940C", "Drama"),
-  // Sandy desert amber — Dune, Lawrence of Arabia
+  // Sandy desert amber - Dune, Lawrence of Arabia
   desert:    makeTheme("#090601", "#1E0F03", "#D4820A", "Desert Epic"),
-  // Deep crimson — thrillers, horrors
+  // Deep crimson - thrillers, horrors
   thriller:  makeTheme("#060103", "#180308", "#C02040", "Thriller"),
-  // Electric blue — sci-fi
+  // Electric blue - sci-fi
   scifi:     makeTheme("#010408", "#03101E", "#1A8FE3", "Sci-Fi"),
-  // Emerald — adventure, jungle
+  // Emerald - adventure, jungle
   adventure: makeTheme("#010502", "#03120A", "#16A35A", "Adventure"),
-  // Deep violet — fantasy, magic
+  // Deep violet - fantasy, magic
   fantasy:   makeTheme("#030108", "#0A0318", "#8B2FD0", "Fantasy"),
-  // Warm terracotta — romance, comedy
+  // Warm terracotta - romance, comedy
   romance:   makeTheme("#070302", "#180B04", "#D45A20", "Romance"),
-  // Steel blue-grey — noir, crime
+  // Steel blue-grey - noir, crime
   noir:      makeTheme("#020304", "#060A10", "#4A7A9B", "Noir"),
-  // Teal — mystery, underwater
+  // Teal - mystery, underwater
   mystery:   makeTheme("#010506", "#031216", "#0EA8A8", "Mystery"),
-  // Warm sepia — western, historical
+  // Warm sepia - western, historical
   western:   makeTheme("#080402", "#1C0E04", "#B87040", "Western"),
 };
 

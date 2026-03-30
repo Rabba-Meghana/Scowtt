@@ -16,7 +16,7 @@ export async function GET() {
 
   const userId = session.user.id;
 
-  // 1. Load user — need their current movie
+  // 1. Load user - need their current movie
   const user = await prisma.user.findUnique({
     where:  { id: userId },
     select: { favoriteMovie: true },
@@ -51,13 +51,13 @@ export async function GET() {
     });
   }
 
-  // 3. Burst / idempotency guard — check if a generation is already in flight
+  // 3. Burst / idempotency guard - check if a generation is already in flight
   const inFlight = await prisma.movieFact.findFirst({
     where: { userId, movie, isGenerating: true },
   });
 
   if (inFlight) {
-    // Another request is already generating — return the last completed fact
+    // Another request is already generating - return the last completed fact
     // instead of firing a second OpenAI call
     const lastFact = await prisma.movieFact.findFirst({
       where:   { userId, movie, isGenerating: false },
@@ -72,7 +72,7 @@ export async function GET() {
       });
     }
 
-    // No completed fact exists yet — ask the client to retry shortly
+    // No completed fact exists yet - ask the client to retry shortly
     return NextResponse.json(
       { message: "Fact generation in progress, please try again." },
       { status: 202 }
@@ -123,7 +123,7 @@ export async function GET() {
       cached:      false,
     });
   } catch (err) {
-    // 7. OpenAI failed — release the lock and fall back to last good fact
+    // 7. OpenAI failed - release the lock and fall back to last good fact
     await prisma.movieFact.delete({ where: { id: placeholder.id } });
 
     console.error("[/api/fact] OpenAI error:", err);

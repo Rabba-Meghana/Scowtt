@@ -1,5 +1,5 @@
 /**
- * lib/api.ts — Typed client wrapper (Variant B)
+ * lib/api.ts - Typed client wrapper (Variant B)
  *
  * All fetch calls go through `apiRequest` which:
  *   1. Sets Content-Type and credentials
@@ -62,7 +62,7 @@ async function apiRequest<T>(
       },
     });
 
-    // Parse body — even errors may contain a message field
+    // Parse body - even errors may contain a message field
     let body: unknown;
     try {
       body = await res.json();
@@ -92,12 +92,12 @@ async function apiRequest<T>(
 
 // ── API functions ─────────────────────────────────────────────────────────────
 
-/** GET /api/me — fetch the current session user */
+/** GET /api/me - fetch the current session user */
 export async function getMe(): Promise<ApiResult<MeResponse>> {
   return apiRequest<MeResponse>("/api/me");
 }
 
-/** PUT /api/me/movie — update the user's favourite movie */
+/** PUT /api/me/movie - update the user's favourite movie */
 export async function updateMovie(
   movie: string
 ): Promise<ApiResult<UpdateMovieResponse>> {
@@ -107,7 +107,7 @@ export async function updateMovie(
   });
 }
 
-/** GET /api/fact — fetch (or generate) a movie fact */
+/** GET /api/fact - fetch (or generate) a movie fact */
 export async function getFact(): Promise<ApiResult<FactResponse>> {
   return apiRequest<FactResponse>("/api/fact");
 }
@@ -144,7 +144,7 @@ export function setCachedFact(movie: string, fact: FactResponse): void {
   _cache = { fact, movie, fetchedAt: Date.now() };
 }
 
-/** Invalidate the cache — call this when the movie is updated */
+/** Invalidate the cache - call this when the movie is updated */
 export function invalidateFactCache(): void {
   _cache = null;
 }

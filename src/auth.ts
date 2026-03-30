@@ -21,7 +21,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     // After sign-in, redirect first-time users to onboarding
     async redirect({ url, baseUrl }) {
-      // NextAuth passes the callbackUrl here — honour it if it's on our domain
+      // NextAuth passes the callbackUrl here - honour it if it's on our domain
       if (url.startsWith(baseUrl)) return url;
       if (url.startsWith("/"))     return `${baseUrl}${url}`;
       return baseUrl;
