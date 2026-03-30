@@ -2,20 +2,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { signOut } from "next-auth/react";
 import { updateMovie, getFact, getCachedFact, setCachedFact, invalidateFactCache, type FactResponse } from "@/lib/api";
+import { getMovieTheme, POSTER_FILMS, POSTER_COLORS, type MovieTheme } from "@/lib/movieThemes";
 
 interface User { id: string; name: string | null; email: string; image: string | null; favoriteMovie: string | null; }
-
-/* ─── tiny reusable icon components ─── */
-function IconStar() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
-function IconInfo() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="var(--gold)" strokeWidth="1.8"/><path d="M12 16v-4M12 8h.01" stroke="var(--gold)" strokeWidth="2.2" strokeLinecap="round"/></svg>; }
-function IconEdit() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
-function IconRefresh() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
-function IconLogout() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
-function IconSun() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="var(--gold)" strokeWidth="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round"/></svg>; }
-function IconMoon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="var(--text-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
-function IconUser() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
-function IconClock() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="var(--text-3)" strokeWidth="1.8"/><path d="M12 6v6l4 2" stroke="var(--text-3)" strokeWidth="2" strokeLinecap="round"/></svg>; }
-function IconFilm() { return <svg width="44" height="44" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="19" stroke="var(--gold)" strokeWidth="1.2"/><circle cx="24" cy="24" r="5" fill="var(--gold)" opacity="0.15"/><circle cx="24" cy="24" r="2.2" fill="var(--gold)"/><circle cx="24" cy="10" r="3" fill="var(--gold)" opacity="0.7"/><circle cx="24" cy="38" r="3" fill="var(--gold)" opacity="0.7"/><circle cx="10" cy="24" r="3" fill="var(--gold)" opacity="0.7"/><circle cx="38" cy="24" r="3" fill="var(--gold)" opacity="0.7"/><circle cx="13.8" cy="13.8" r="2.3" fill="var(--gold)" opacity="0.38"/><circle cx="34.2" cy="13.8" r="2.3" fill="var(--gold)" opacity="0.38"/><circle cx="13.8" cy="34.2" r="2.3" fill="var(--gold)" opacity="0.38"/><circle cx="34.2" cy="34.2" r="2.3" fill="var(--gold)" opacity="0.38"/></svg>; }
 
 export default function DashboardClient({ user }: { user: User }) {
   const [movie, setMovie]             = useState(user.favoriteMovie ?? "");
@@ -27,31 +16,46 @@ export default function DashboardClient({ user }: { user: User }) {
   const [factLoading, setFactLoading] = useState(true);
   const [factError, setFactError]     = useState<string | null>(null);
   const [factHistory, setFactHistory] = useState<FactResponse[]>([]);
-  const [dark, setDark]               = useState(true);
+  const [theme, setTheme]             = useState<MovieTheme>(getMovieTheme(""));
+  const [activeTab, setActiveTab]     = useState<"dashboard"|"api">("dashboard");
   const [mounted, setMounted]         = useState(false);
   const editRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem("mm-dark");
-    const isDark = saved === null ? true : saved === "true";
-    setDark(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
+  // Apply theme to CSS variables
+  const applyTheme = useCallback((t: MovieTheme) => {
+    const r = document.documentElement.style;
+    r.setProperty("--theme-bg-1",   t.bg1);
+    r.setProperty("--theme-bg-2",   t.bg2);
+    r.setProperty("--theme-accent", t.accent);
+    r.setProperty("--theme-glow",   t.glow);
+    r.setProperty("--theme-text",   t.text);
+    r.setProperty("--theme-muted",  t.muted);
+    r.setProperty("--theme-border", t.border);
+    r.setProperty("--theme-card",   t.card);
+    document.body.style.background = t.bg1;
+    document.body.style.color = t.text;
   }, []);
 
-  const toggleDark = () => {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("mm-dark", String(next));
-  };
+  useEffect(() => {
+    setMounted(true);
+    const t = getMovieTheme(user.favoriteMovie ?? "");
+    setTheme(t);
+    applyTheme(t);
+  }, [user.favoriteMovie, applyTheme]);
+
+  // Update theme when movie changes
+  useEffect(() => {
+    const t = getMovieTheme(movie);
+    setTheme(t);
+    applyTheme(t);
+  }, [movie, applyTheme]);
 
   const loadFact = useCallback(async (force = false) => {
     if (!movie) return;
     if (!force) { const c = getCachedFact(movie); if (c) { setFact(c); setFactLoading(false); return; } }
     setFactLoading(true); setFactError(null);
     const r = await getFact();
-    if (r.ok) { setCachedFact(movie, r.data); setFact(r.data); setFactHistory(h => [r.data, ...h].slice(0, 5)); }
+    if (r.ok) { setCachedFact(movie, r.data); setFact(r.data); setFactHistory(h => [r.data, ...h].slice(0, 8)); }
     else setFactError(r.error.message);
     setFactLoading(false);
   }, [movie]);
@@ -64,7 +68,7 @@ export default function DashboardClient({ user }: { user: User }) {
 
   async function saveEdit() {
     const t = editValue.trim();
-    if (!t) { setMovieError("Movie name cannot be empty."); return; }
+    if (!t) { setMovieError("Cannot be empty."); return; }
     if (t.length > 200) { setMovieError("Max 200 characters."); return; }
     setIsSaving(true); setMovieError(null);
     const prev = movie;
@@ -75,7 +79,6 @@ export default function DashboardClient({ user }: { user: User }) {
     setIsSaving(false);
   }
 
-  const initials = (user.name ?? user.email).split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
   const firstName = user.name?.split(" ")[0] ?? "there";
 
   function timeAgo(iso: string) {
@@ -84,335 +87,426 @@ export default function DashboardClient({ user }: { user: User }) {
     if (s < 86400) return `${Math.floor(s/3600)}h ago`; return `${Math.floor(s/86400)}d ago`;
   }
 
-  /* ─── theme-aware colors ─── */
-  const bg       = dark ? "var(--black)"   : "#F5EFE0";
-  const bgCard   = dark ? "rgba(18,13,5,0.72)" : "rgba(255,252,242,0.85)";
-  const borderC  = dark ? "var(--border)"  : "rgba(160,110,10,0.2)";
-  const textC    = dark ? "var(--text)"    : "#1A1008";
-  const text2    = dark ? "var(--text-2)"  : "#8B5E10";
-  const text3    = dark ? "var(--text-3)"  : "#A07838";
-  const surfBg   = dark ? "rgba(201,148,12,0.05)" : "rgba(201,148,12,0.06)";
-  const navBg    = dark ? "rgba(7,5,3,0.92)" : "rgba(245,239,224,0.92)";
-  const inputBg  = dark ? "rgba(201,148,12,0.05)" : "rgba(201,148,12,0.04)";
-
-  const glassStyle: React.CSSProperties = {
-    background: bgCard,
-    backdropFilter: "blur(36px)",
-    WebkitBackdropFilter: "blur(36px)",
-    border: `1px solid ${borderC}`,
-    borderRadius: 24,
-    boxShadow: dark
-      ? "0 0 0 1px rgba(0,0,0,0.4), 0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(201,148,12,0.1)"
-      : "0 8px 40px rgba(180,130,10,0.1), 0 1px 0 rgba(255,255,255,0.8) inset",
-    position: "relative",
-    overflow: "hidden",
+  // Poster tile component
+  const PosterTile = ({ film, idx }: { film: string; idx: number }) => {
+    const colors = POSTER_COLORS[idx % POSTER_COLORS.length];
+    return (
+      <div style={{
+        width: 130, height: 195, borderRadius: 12, flexShrink: 0,
+        background: `linear-gradient(160deg, ${colors[0]} 0%, ${colors[1]} 100%)`,
+        border: "1px solid rgba(255,255,255,0.06)",
+        display: "flex", flexDirection: "column", justifyContent: "flex-end",
+        padding: "12px 10px", position: "relative", overflow: "hidden",
+      }}>
+        {/* Film grain overlay */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E\")", opacity: 0.4 }} />
+        {/* Gradient overlay */}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)" }} />
+        {/* Title */}
+        <p style={{ position: "relative", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.7)", lineHeight: 1.3, fontFamily: "var(--fp)" }}>{film}</p>
+      </div>
+    );
   };
 
   if (!mounted) return null;
 
-  return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: bg, color: textC, fontFamily: "var(--ff)", position: "relative", overflow: "hidden", transition: "background 0.3s, color 0.3s" }}>
+  const acc = theme.accent;
+  const glow = theme.glow;
 
-      {/* ── AMBIENT BACKGROUND ── */}
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}>
-        <div style={{ position: "absolute", top: "-25%", left: "50%", transform: "translateX(-50%)", width: 1000, height: 800, borderRadius: "50%", background: `radial-gradient(ellipse, ${dark ? "rgba(201,148,12,0.09)" : "rgba(201,148,12,0.07)"} 0%, transparent 60%)` }} />
-        <div style={{ position: "absolute", bottom: "-20%", left: "-5%", width: 700, height: 700, borderRadius: "50%", background: `radial-gradient(circle, ${dark ? "rgba(140,80,5,0.08)" : "rgba(140,80,5,0.05)"} 0%, transparent 65%)` }} />
-        <div style={{ position: "absolute", top: "30%", right: "-5%", width: 600, height: 600, borderRadius: "50%", background: `radial-gradient(circle, ${dark ? "rgba(201,148,12,0.05)" : "rgba(201,148,12,0.04)"} 0%, transparent 65%)` }} />
-        {/* Subtle grid */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(${dark ? "rgba(201,148,12,0.04)" : "rgba(201,148,12,0.06)"} 1px, transparent 1px), linear-gradient(90deg, ${dark ? "rgba(201,148,12,0.04)" : "rgba(201,148,12,0.06)"} 1px, transparent 1px)`, backgroundSize: "80px 80px" }} />
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: theme.bg1, color: theme.text, fontFamily: "var(--ff)", position: "relative", overflow: "hidden", transition: "background 1.2s ease, color 0.6s ease" }}>
+
+      {/* ══ SCROLLING FILM BACKGROUND ══ */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, overflow: "hidden", pointerEvents: "none" }}>
+        {/* Row 1 */}
+        <div style={{ position: "absolute", top: "5%", left: 0, display: "flex", gap: 16, opacity: 0.18 }} className="film-strip">
+          {[...POSTER_FILMS, ...POSTER_FILMS].map((f, i) => <PosterTile key={i} film={f} idx={i} />)}
+        </div>
+        {/* Row 2 — reverse direction */}
+        <div style={{ position: "absolute", top: "36%", left: 0, display: "flex", gap: 16, opacity: 0.13, animation: "scroll-bg 55s linear infinite reverse" }}>
+          {[...POSTER_FILMS, ...POSTER_FILMS].map((f, i) => <PosterTile key={i} film={f} idx={i + 5} />)}
+        </div>
+        {/* Row 3 */}
+        <div style={{ position: "absolute", top: "65%", left: 0, display: "flex", gap: 16, opacity: 0.1, animation: "scroll-bg 70s linear infinite" }}>
+          {[...POSTER_FILMS, ...POSTER_FILMS].map((f, i) => <PosterTile key={i} film={f} idx={i + 10} />)}
+        </div>
+        {/* Dark overlay to keep content readable */}
+        <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, ${theme.bg1}CC 0%, ${theme.bg1}99 40%, ${theme.bg1}99 60%, ${theme.bg1}CC 100%)` }} />
+        {/* Radial accent glow */}
+        <div style={{ position: "absolute", top: "-10%", left: "50%", transform: "translateX(-50%)", width: 900, height: 600, borderRadius: "50%", background: `radial-gradient(ellipse, ${glow.replace("0.2","0.12")} 0%, transparent 65%)` }} />
         {/* Vignette */}
-        <div style={{ position: "absolute", inset: 0, background: dark ? "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.5) 100%)" : "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.08) 100%)" }} />
-        {/* Twinkling stars */}
-        {mounted && [
-          {top:"8%",left:"12%",d:0},{top:"15%",left:"88%",d:0.5},{top:"72%",left:"6%",d:1},
-          {top:"80%",left:"92%",d:1.5},{top:"45%",left:"3%",d:0.8},{top:"55%",left:"97%",d:0.3},
-          {top:"22%",left:"45%",d:1.2},{top:"88%",left:"55%",d:0.6},{top:"35%",left:"95%",d:2},
-        ].map((s,i) => (
-          <div key={i} style={{ position: "absolute", width: 2, height: 2, borderRadius: "50%", background: "var(--gold)", top: s.top, left: s.left, animation: `twinkle ${2.5 + i * 0.4}s ${s.d}s ease-in-out infinite` }} />
-        ))}
+        <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at center, transparent 35%, ${theme.bg1}BB 100%)` }} />
       </div>
 
       {/* ══ NAVBAR ══ */}
-      <nav style={{ position: "sticky", top: 0, zIndex: 200, background: navBg, backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderBottom: `1px solid ${borderC}`, height: 64, display: "flex", alignItems: "center", padding: "0 clamp(1.25rem,4vw,2.5rem)", gap: 14 }}>
+      <nav style={{ position: "sticky", top: 0, zIndex: 200, background: `${theme.bg1}E8`, backdropFilter: "blur(32px)", WebkitBackdropFilter: "blur(32px)", borderBottom: `1px solid ${theme.border}`, height: 62, display: "flex", alignItems: "center", padding: "0 clamp(1.25rem,4vw,2.5rem)", gap: 12 }}>
 
+        {/* Brand */}
         <a href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", flexShrink: 0 }}>
-          <div className="float" style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(201,148,12,0.1)", border: "1px solid rgba(201,148,12,0.28)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="22" height="22" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="18" stroke="var(--gold)" strokeWidth="1.5"/>
-              <circle cx="24" cy="24" r="2.5" fill="var(--gold)"/>
-              <circle cx="24" cy="11" r="2.8" fill="var(--gold)" opacity="0.7"/>
-              <circle cx="24" cy="37" r="2.8" fill="var(--gold)" opacity="0.7"/>
-              <circle cx="11" cy="24" r="2.8" fill="var(--gold)" opacity="0.7"/>
-              <circle cx="37" cy="24" r="2.8" fill="var(--gold)" opacity="0.7"/>
-            </svg>
-          </div>
-          <span style={{ fontFamily: "var(--fp)", fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em" }} className="gold-text">Movie Memory</span>
+          <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="17" stroke={acc} strokeWidth="1.2"/>
+            <circle cx="20" cy="20" r="2.5" fill={acc}/>
+            <circle cx="20" cy="9"  r="2.8" fill={acc} opacity="0.7"/>
+            <circle cx="20" cy="31" r="2.8" fill={acc} opacity="0.7"/>
+            <circle cx="9"  cy="20" r="2.8" fill={acc} opacity="0.7"/>
+            <circle cx="31" cy="20" r="2.8" fill={acc} opacity="0.7"/>
+          </svg>
+          <span style={{ fontFamily: "var(--fp)", fontSize: 19, fontWeight: 700, letterSpacing: "-0.01em" }} className="accent-text">Movie Memory</span>
         </a>
+
+        {/* Genre badge */}
+        {theme.label && (
+          <div style={{ padding: "3px 10px", borderRadius: 20, background: glow, border: `1px solid ${acc}44`, fontSize: 11, fontWeight: 600, color: acc, letterSpacing: "0.08em", textTransform: "uppercase", transition: "all 0.6s ease" }}>
+            {theme.label}
+          </div>
+        )}
 
         <div style={{ flex: 1 }} />
 
-        {/* Theme toggle */}
-        <button onClick={toggleDark} title={dark ? "Light mode" : "Dark mode"} style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(201,148,12,0.08)", border: `1px solid ${borderC}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s", flexShrink: 0 }}>
-          {dark ? <IconSun /> : <IconMoon />}
-        </button>
-
-        {/* User pill */}
-        <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "5px 14px 5px 6px", borderRadius: 50, background: "rgba(201,148,12,0.08)", border: `1px solid ${borderC}` }}>
-          <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: surfBg, border: "1.5px solid rgba(201,148,12,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--gold)", flexShrink: 0 }}>
-            {user.image ? <img src={user.image + "?sz=64"} alt="av" referrerPolicy="no-referrer" style={{ width: 32, height: 32, objectFit: "cover", display: "block" }} /> : initials}
-          </div>
-          <span style={{ fontSize: 13, fontWeight: 500, color: textC, maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name ?? user.email}</span>
+        {/* Tab nav */}
+        <div style={{ display: "flex", gap: 4, background: `${theme.bg2}CC`, borderRadius: 12, padding: 4, border: `1px solid ${theme.border}` }}>
+          {(["dashboard","api"] as const).map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{
+              padding: "6px 16px", borderRadius: 9, fontSize: 12, fontWeight: 600,
+              cursor: "pointer", fontFamily: "var(--ff)", letterSpacing: "0.04em",
+              textTransform: "capitalize", transition: "all 0.2s", border: "none",
+              background: activeTab === tab ? acc : "transparent",
+              color: activeTab === tab ? "#000" : theme.muted,
+            }}>{tab}</button>
+          ))}
         </div>
 
-        <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-gold" style={{ padding: "9px 20px", fontSize: 13 }}>
-          <IconLogout />Logout
+        {/* User mini */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px 5px 6px", borderRadius: 50, background: glow, border: `1px solid ${acc}33` }}>
+          <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", background: theme.bg2, border: `1.5px solid ${acc}66`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: acc, flexShrink: 0 }}>
+            {user.image ? <img src={user.image + "?sz=56"} alt="av" referrerPolicy="no-referrer" style={{ width: 28, height: 28, objectFit: "cover", display: "block" }} /> : (user.name?.[0] ?? "?")}
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 500, color: theme.text, maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name?.split(" ")[0] ?? user.email}</span>
+        </div>
+
+        <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-primary" style={{ padding: "8px 18px", fontSize: 12 }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Logout
         </button>
       </nav>
 
-      {/* ══ HERO ══ */}
-      <section style={{ position: "relative", zIndex: 1, padding: "clamp(4rem,9vw,7rem) clamp(1.25rem,4vw,2.5rem) clamp(3rem,6vw,5rem)", textAlign: "center", borderBottom: `1px solid ${borderC}` }}>
-        {/* Avatar with double ring */}
-        <div style={{ position: "relative", display: "inline-block", marginBottom: 36 }} className="float">
-          <div style={{ position: "absolute", inset: -18, borderRadius: "50%", border: "1px solid rgba(201,148,12,0.12)", animation: "ring-pulse 3s ease-out infinite" }} />
-          <div style={{ position: "absolute", inset: -9, borderRadius: "50%", border: "1px solid rgba(201,148,12,0.22)" }} />
-          <div style={{ width: 108, height: 108, borderRadius: "50%", overflow: "hidden", background: surfBg, border: "2.5px solid rgba(201,148,12,0.5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, fontWeight: 900, color: "var(--gold)", boxShadow: "0 0 50px rgba(201,148,12,0.25), inset 0 0 20px rgba(201,148,12,0.05)" }}>
-            {user.image ? <img src={user.image + "?sz=216"} alt="profile" referrerPolicy="no-referrer" style={{ width: 108, height: 108, objectFit: "cover", display: "block" }} /> : initials}
-          </div>
-        </div>
+      {/* ══ DASHBOARD TAB ══ */}
+      {activeTab === "dashboard" && (
+        <div style={{ position: "relative", zIndex: 1, flex: 1 }}>
 
-        <div className="fade-up">
-          <p style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: text3, marginBottom: 18, fontWeight: 600 }}>Your personal cinema</p>
-          <h1 style={{ fontFamily: "var(--fp)", fontSize: "clamp(44px,9vw,88px)", fontWeight: 900, lineHeight: 0.92, letterSpacing: "-0.025em", marginBottom: 20 }}>
-            <span style={{ display: "block", color: textC, opacity: 0.9 }}>Welcome back,</span>
-            <span className="gold-text" style={{ display: "block" }}>{firstName}.</span>
-          </h1>
-          <p style={{ fontSize: 15, color: text3, fontWeight: 300, letterSpacing: "0.01em" }}>{user.email}</p>
-        </div>
-      </section>
+          {/* HERO — editorial style, left-aligned */}
+          <section style={{ padding: "clamp(3rem,7vw,5.5rem) clamp(1.5rem,5vw,3rem)", borderBottom: `1px solid ${theme.border}`, maxWidth: 1200, margin: "0 auto", width: "100%" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2rem", alignItems: "center" }}>
+              <div className="fade-up">
+                <p style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: acc, marginBottom: 16, fontWeight: 700, opacity: 0.8 }}>
+                  Your personal cinema — {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                </p>
+                <h1 style={{ fontFamily: "var(--fp)", fontSize: "clamp(42px,7vw,82px)", fontWeight: 900, lineHeight: 0.93, letterSpacing: "-0.025em", marginBottom: 20 }}>
+                  <span style={{ display: "block", color: theme.text, opacity: 0.85 }}>Welcome</span>
+                  <span style={{ display: "block", color: theme.text, opacity: 0.85 }}>back,</span>
+                  <span className="accent-text" style={{ display: "block", fontStyle: "italic" }}>{firstName}.</span>
+                </h1>
+                <p style={{ fontSize: 15, color: theme.muted, fontWeight: 300, maxWidth: 420, lineHeight: 1.7 }}>
+                  {movie
+                    ? <>Currently obsessed with <span style={{ color: acc, fontWeight: 600 }}>"{movie}"</span>. The theme adapts to your film.</>
+                    : "Set your favourite film below and watch the entire theme transform."}
+                </p>
+              </div>
 
-      {/* ══ CONTENT GRID ══ */}
-      <main style={{ flex: 1, maxWidth: 1060, width: "100%", margin: "0 auto", padding: "clamp(2rem,5vw,3rem) clamp(1.25rem,4vw,1.5rem)", display: "grid", gridTemplateColumns: "minmax(0,1fr) 314px", gap: "1.5rem", alignItems: "start", position: "relative", zIndex: 1 }}>
-
-        {/* ── LEFT ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-
-          {/* MOVIE CARD */}
-          <div className="fade-up" style={glassStyle}>
-            {/* Top shimmer line */}
-            <div style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: 1, background: "linear-gradient(90deg, transparent, rgba(201,148,12,0.5), transparent)" }} />
-            <div style={{ padding: "clamp(1.5rem,4vw,2.25rem)" }}>
-
-              {/* Header */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(201,148,12,0.1)", border: "1px solid rgba(201,148,12,0.22)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <IconStar />
+              {/* Right — profile snapshot (NOT circular, editorial card) */}
+              <div className="fade-up-2" style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
+                {user.image && (
+                  <div style={{ width: 80, height: 80, borderRadius: 16, overflow: "hidden", border: `2px solid ${acc}50`, boxShadow: `0 0 32px ${glow}` }}>
+                    <img src={user.image + "?sz=160"} alt="profile" referrerPolicy="no-referrer" style={{ width: 80, height: 80, objectFit: "cover", display: "block" }} />
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: text3, letterSpacing: "0.14em", textTransform: "uppercase" }}>Favourite Movie</span>
+                )}
+                <p style={{ fontFamily: "var(--fp)", fontSize: 15, fontWeight: 700, color: theme.text }}>{user.name}</p>
+                <p style={{ fontSize: 11, color: theme.muted }}>{user.email}</p>
+              </div>
+            </div>
+          </section>
+
+          {/* MAIN CONTENT — asymmetric layout */}
+          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "clamp(2rem,4vw,3rem) clamp(1.5rem,5vw,3rem)", display: "grid", gridTemplateColumns: "minmax(0,1.6fr) minmax(0,1fr)", gap: "2rem" }}>
+
+            {/* ── LEFT — Movie + Fact (big) ── */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+
+              {/* MOVIE BLOCK — not a card, raw editorial */}
+              <div className="fade-up">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: theme.muted, letterSpacing: "0.18em", textTransform: "uppercase" }}>Now watching</span>
+                  <button onClick={startEdit} className="btn-ghost" style={{ padding: "6px 14px", fontSize: 11 }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Change film
+                  </button>
                 </div>
-                {!isEditing && (
-                  <button onClick={startEdit} className="btn-ghost" style={{ padding: "7px 16px", fontSize: 12 }}>
-                    <IconEdit />Edit
+
+                {isEditing ? (
+                  <div style={{ padding: "1.5rem", background: theme.card, backdropFilter: "blur(32px)", border: `1px solid ${acc}44`, borderRadius: 20, marginBottom: 16 }}>
+                    <input ref={editRef} type="text" value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
+                      placeholder="e.g. The Shawshank Redemption"
+                      maxLength={200}
+                      style={{ width: "100%", padding: "14px 18px", borderRadius: 12, marginBottom: 10, background: "rgba(255,255,255,0.04)", border: `1.5px solid ${acc}`, color: theme.text, fontSize: 18, outline: "none", fontFamily: "var(--fp)", fontWeight: 700 }}
+                    />
+                    {movieError && <p style={{ fontSize: 12, color: acc, marginBottom: 12 }}>{movieError}</p>}
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={saveEdit} disabled={isSaving || !editValue.trim()} className="btn-primary">
+                        {isSaving ? "Saving…" : "Save & update theme"}
+                      </button>
+                      <button onClick={cancelEdit} className="btn-ghost">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <h2 style={{ fontFamily: "var(--fp)", fontSize: "clamp(36px,5.5vw,64px)", fontWeight: 900, lineHeight: 0.95, letterSpacing: "-0.02em", marginBottom: 6, transition: "color 0.8s" }} className="accent-text">
+                    {movie || <span style={{ opacity: 0.3, fontStyle: "italic", fontSize: "clamp(24px,4vw,40px)" }}>Set your favourite film</span>}
+                  </h2>
+                )}
+                {movie && !isEditing && (
+                  <p style={{ fontSize: 12, color: theme.muted, marginTop: 8 }}>
+                    Theme: <span style={{ color: acc, fontWeight: 600 }}>{theme.label}</span> · AI facts by <span style={{ color: acc, fontWeight: 600 }}>GPT-4o mini</span>
+                  </p>
+                )}
+              </div>
+
+              {/* FACT CARD */}
+              <div className="glass fade-up-2" style={{ padding: "clamp(1.5rem,3vw,2rem)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                  <div style={{ width: 4, height: 36, borderRadius: 4, background: `linear-gradient(to bottom, ${acc}, ${acc}40)`, flexShrink: 0 }} />
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: theme.text, marginBottom: 2 }}>Cinema Fact</p>
+                    <p style={{ fontSize: 11, color: theme.muted }}>Powered by OpenAI GPT-4o mini</p>
+                  </div>
+                  <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+                    {fact?.cached && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, border: `1px solid ${theme.border}`, color: theme.muted, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>cached</span>}
+                    {fact && <span style={{ fontSize: 11, color: theme.muted }}>{timeAgo(fact.generatedAt)}</span>}
+                  </div>
+                </div>
+
+                {factLoading ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {[100,92,80,60].map((w,i) => <div key={i} className="skel" style={{ height: 16, width: `${w}%`, animationDelay: `${i*0.1}s` }} />)}
+                  </div>
+                ) : factError ? (
+                  <p style={{ fontSize: 14, color: theme.muted, lineHeight: 1.7, padding: "14px 18px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: `1px solid ${theme.border}` }}>{factError}</p>
+                ) : fact ? (
+                  <p style={{ fontSize: 16, lineHeight: 1.85, color: theme.text, fontWeight: 300, letterSpacing: "0.01em" }}>{fact.factText}</p>
+                ) : null}
+
+                {!factLoading && movie && (
+                  <button onClick={() => loadFact(true)} className="btn-ghost" style={{ marginTop: 20, fontSize: 13 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Generate new fact
                   </button>
                 )}
               </div>
 
-              {/* Movie title or edit form */}
-              {isEditing ? (
-                <div>
-                  <input ref={editRef} type="text" value={editValue}
-                    onChange={e => setEditValue(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
-                    placeholder="e.g. The Shawshank Redemption" maxLength={200}
-                    style={{ width: "100%", padding: "14px 18px", borderRadius: 14, marginBottom: 12, background: inputBg, border: "1.5px solid var(--gold)", color: textC, fontSize: 17, outline: "none", fontFamily: "var(--ff)", fontWeight: 300, boxShadow: "0 0 0 4px rgba(201,148,12,0.08)", transition: "box-shadow 0.2s" }}
-                  />
-                  {movieError && <p style={{ fontSize: 13, color: "var(--gold-light)", marginBottom: 12, lineHeight: 1.5 }}>{movieError}</p>}
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <button onClick={saveEdit} disabled={isSaving || !editValue.trim()} className="btn-gold" style={{ opacity: (isSaving || !editValue.trim()) ? 0.45 : 1 }}>
-                      {isSaving ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 0.7s linear infinite" }}><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="30 60"/></svg>Saving…</> : "Save changes"}
-                    </button>
-                    <button onClick={cancelEdit} className="btn-ghost">Cancel</button>
+              {/* FACT HISTORY */}
+              {factHistory.length > 1 && (
+                <div className="glass fade-up-3" style={{ padding: "1.5rem" }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: theme.muted, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 16 }}>Session history</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {factHistory.slice(1).map((f, i) => (
+                      <div key={i} style={{ display: "flex", gap: 14, padding: "12px 16px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: `1px solid ${theme.border}` }}>
+                        <div style={{ width: 2, borderRadius: 2, background: acc, opacity: 0.3, flexShrink: 0 }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, color: theme.text, lineHeight: 1.7, fontWeight: 300 }}>{f.factText}</p>
+                          <p style={{ fontSize: 10, color: theme.muted, marginTop: 4 }}>{timeAgo(f.generatedAt)}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ) : (
-                <div>
-                  <h2 style={{ fontFamily: "var(--fp)", fontSize: "clamp(30px,5vw,56px)", fontWeight: 900, lineHeight: 1.05, marginBottom: 10, letterSpacing: "-0.015em" }} className="gold-text">
-                    {movie || <span style={{ opacity: 0.4, fontSize: "clamp(22px,4vw,36px)" }}>No movie set yet</span>}
-                  </h2>
-                  {movie && <p style={{ fontSize: 12, color: text3, fontWeight: 400, letterSpacing: "0.02em" }}>Powered by <span style={{ color: "var(--gold)", fontWeight: 600 }}>OpenAI GPT-4o mini</span></p>}
-                </div>
-              )}
-
-              {/* Divider */}
-              <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${borderC}, transparent)`, margin: "24px 0" }} />
-
-              {/* Fact section */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
-                <IconInfo />
-                <span style={{ fontSize: 13, fontWeight: 600, color: text2 }}>Recent Fact</span>
-                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "rgba(201,148,12,0.1)", color: "var(--gold)", fontWeight: 600, border: "1px solid rgba(201,148,12,0.22)", letterSpacing: "0.04em" }}>OpenAI</span>
-                {fact?.cached && <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, border: `1px solid ${borderC}`, color: text3 }}>cached</span>}
-                {fact && <span style={{ fontSize: 12, color: text3, marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}><IconClock />{timeAgo(fact.generatedAt)}</span>}
-              </div>
-
-              {factLoading ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {[100,90,78,55].map((w,i) => <div key={i} className="skel" style={{ height: 16, width: `${w}%`, animationDelay: `${i*0.12}s` }} />)}
-                </div>
-              ) : factError ? (
-                <div style={{ padding: "16px 20px", borderRadius: 14, background: "rgba(201,148,12,0.05)", border: `1px solid ${borderC}`, color: text3, fontSize: 14, lineHeight: 1.6 }}>
-                  {factError}
-                </div>
-              ) : fact ? (
-                <div style={{ padding: "20px 24px", borderRadius: 18, background: surfBg, border: `1px solid ${borderC}`, position: "relative" }}>
-                  {/* Gold left accent bar */}
-                  <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: "linear-gradient(180deg, var(--gold-bright), var(--gold-dim))", borderRadius: "18px 0 0 18px" }} />
-                  <p style={{ fontSize: 15, lineHeight: 1.9, color: textC, fontWeight: 300, paddingLeft: 6 }}>{fact.factText}</p>
-                </div>
-              ) : null}
-
-              {!factLoading && movie && (
-                <button onClick={() => loadFact(true)} className="btn-ghost" style={{ marginTop: 18 }}>
-                  <IconRefresh />Generate new fact
-                </button>
               )}
             </div>
-          </div>
 
-          {/* FACT HISTORY */}
-          {factHistory.length > 1 && (
-            <div className="fade-up-2" style={glassStyle}>
-              <div style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: 1, background: "linear-gradient(90deg, transparent, rgba(201,148,12,0.3), transparent)" }} />
-              <div style={{ padding: "1.75rem 2rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(201,148,12,0.1)", border: "1px solid rgba(201,148,12,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <IconClock />
-                  </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: text3, letterSpacing: "0.14em", textTransform: "uppercase" }}>Previous facts this session</span>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {factHistory.slice(1).map((f, i) => (
-                    <div key={i} style={{ padding: "14px 18px", borderRadius: 14, background: surfBg, border: `1px solid ${borderC}`, display: "flex", gap: 14 }}>
-                      <div style={{ width: 2, borderRadius: 2, background: "var(--gold-dim)", flexShrink: 0, opacity: 0.5 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 14, color: textC, lineHeight: 1.7, fontWeight: 300 }}>{f.factText}</p>
-                        <p style={{ fontSize: 11, color: text3, marginTop: 6 }}>{timeAgo(f.generatedAt)}</p>
+            {/* ── RIGHT — Profile + Stats ── */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+              {/* PROFILE — not a card, editorial list */}
+              <div className="glass fade-up-2" style={{ padding: "1.75rem" }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: theme.muted, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 18 }}>Your profile</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                  {[
+                    { l: "Name",  v: user.name ?? "—" },
+                    { l: "Email", v: user.email },
+                    { l: "Film",  v: movie || "—" },
+                    { l: "Theme", v: theme.label },
+                  ].map((r, i, a) => (
+                    <div key={r.l}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0" }}>
+                        <span style={{ fontSize: 12, color: theme.muted, fontWeight: 500 }}>{r.l}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: r.l === "Theme" ? acc : theme.text, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>{r.v}</span>
                       </div>
+                      {i < a.length - 1 && <div style={{ height: 1, background: theme.border }} />}
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* ── RIGHT ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-
-          {/* PROFILE CARD */}
-          <div className="fade-up-2" style={glassStyle}>
-            <div style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: 1, background: "linear-gradient(90deg, transparent, rgba(201,148,12,0.4), transparent)" }} />
-            <div style={{ padding: "1.75rem", textAlign: "center" }}>
-              {/* Avatar */}
-              <div style={{ position: "relative", display: "inline-block", marginBottom: 18 }}>
-                <div style={{ position: "absolute", inset: -6, borderRadius: "50%", border: "1px solid rgba(201,148,12,0.2)", animation: "ring-pulse 4s ease-out infinite" }} />
-                <div style={{ width: 76, height: 76, borderRadius: "50%", overflow: "hidden", background: surfBg, border: "2px solid rgba(201,148,12,0.45)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: "var(--gold)", boxShadow: "0 0 28px rgba(201,148,12,0.18)" }}>
-                  {user.image ? <img src={user.image + "?sz=152"} alt="pf" referrerPolicy="no-referrer" style={{ width: 76, height: 76, objectFit: "cover", display: "block" }} /> : initials}
+              {/* DYNAMIC THEME PALETTE — shows what changed */}
+              <div className="glass fade-up-3" style={{ padding: "1.5rem" }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: theme.muted, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 16 }}>Active theme</p>
+                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                  {[theme.bg1, theme.bg2, theme.accent, theme.text, theme.muted].map((c, i) => (
+                    <div key={i} style={{ width: 32, height: 32, borderRadius: 8, background: c, border: `1px solid ${theme.border}`, flexShrink: 0, boxShadow: i === 2 ? `0 0 12px ${glow}` : "none" }} />
+                  ))}
                 </div>
+                <p style={{ fontSize: 13, color: theme.muted, lineHeight: 1.6, fontWeight: 300 }}>
+                  Theme changes based on your movie genre. Try changing to a sci-fi film like <span style={{ color: acc }}>"Interstellar"</span> or a thriller like <span style={{ color: acc }}>"The Dark Knight"</span>.
+                </p>
               </div>
-              <p style={{ fontFamily: "var(--fp)", fontSize: 18, fontWeight: 700, color: textC, marginBottom: 4 }}>{user.name ?? "—"}</p>
-              <p style={{ fontSize: 12, color: text3, marginBottom: 20 }}>{user.email}</p>
-              <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${borderC}, transparent)`, marginBottom: 20 }} />
 
-              {/* Fields */}
-              <div style={{ textAlign: "left" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                  <IconUser />
-                  <span style={{ fontSize: 11, fontWeight: 700, color: text3, letterSpacing: "0.14em", textTransform: "uppercase" }}>Profile</span>
-                </div>
-                {[{ l: "Name", v: user.name ?? "—" }, { l: "Email", v: user.email }, { l: "Favourite film", v: movie || "—" }].map((r, i, a) => (
-                  <div key={r.l}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
-                      <span style={{ fontSize: 12, color: text3 }}>{r.l}</span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: textC, maxWidth: 145, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>{r.v}</span>
-                    </div>
-                    {i < a.length - 1 && <div style={{ height: 1, background: `rgba(201,148,12,0.08)` }} />}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* TECH CARD */}
-          <div className="fade-up-3" style={glassStyle}>
-            <div style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: 1, background: "linear-gradient(90deg, transparent, rgba(201,148,12,0.3), transparent)" }} />
-            <div style={{ padding: "1.5rem 1.75rem" }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: text3, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 18 }}>Built with</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {/* STACK */}
+              <div className="glass fade-up-4" style={{ padding: "1.5rem" }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: theme.muted, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 16 }}>Tech stack</p>
                 {[
-                  { label: "AI model",  val: "GPT-4o mini",   dot: "#C8920A" },
-                  { label: "Auth",      val: "Google OAuth",  dot: "#4285F4" },
-                  { label: "Database",  val: "PostgreSQL",    dot: "#336791" },
-                  { label: "Framework", val: "Next.js 15",    dot: "#ffffff" },
-                  { label: "Cache",     val: fact?.cached ? "Hit — 30s window" : "Live generation", dot: "#22C55E" },
+                  { l: "AI",        v: "GPT-4o mini",  dot: acc },
+                  { l: "Auth",      v: "Google OAuth", dot: "#4285F4" },
+                  { l: "Database",  v: "PostgreSQL",   dot: "#336791" },
+                  { l: "Framework", v: "Next.js 15",   dot: "#E8E8E8" },
+                  { l: "Cache",     v: fact?.cached ? "Hit ✓" : "Live", dot: "#22C55E" },
                 ].map(s => (
-                  <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 14px", borderRadius: 12, background: surfBg, border: `1px solid ${borderC}` }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: s.dot, boxShadow: `0 0 6px ${s.dot}60`, flexShrink: 0 }} />
-                      <span style={{ fontSize: 12, color: text3 }}>{s.label}</span>
+                  <div key={s.l} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${theme.border}` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: s.dot, boxShadow: `0 0 8px ${s.dot}80`, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: theme.muted }}>{s.l}</span>
                     </div>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: textC }}>{s.val}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: theme.text }}>{s.v}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        </div>
-      </main>
 
-      {/* ══ HOW IT WORKS ══ */}
-      <section style={{ position: "relative", zIndex: 1, padding: "clamp(4rem,7vw,6rem) clamp(1.25rem,4vw,2.5rem)", borderTop: `1px solid ${borderC}` }}>
-        <div style={{ maxWidth: 1060, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "clamp(2.5rem,5vw,4rem)" }}>
-            <p style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: text3, marginBottom: 16, fontWeight: 600 }}>The process</p>
-            <h2 style={{ fontFamily: "var(--fp)", fontSize: "clamp(32px,5vw,52px)", fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1.1 }} className="gold-text">How it works</h2>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "1.5rem" }}>
-            {[
-              { n: "01", icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="var(--gold)" strokeWidth="1.5"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"/></svg>, t: "Sign in securely", d: "Google OAuth handles authentication. We only access your name, email, and profile photo — nothing else is stored." },
-              { n: "02", icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4M4 20h16a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1z" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"/></svg>, t: "Save your film", d: "Enter your all-time favourite movie. Edit it anytime — the fact cache invalidates automatically when you make a change." },
-              { n: "03", icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 3v1m0 16v1M4.22 4.22l.7.7m12.16 12.16.7.7M3 12h1m16 0h1M4.92 19.08l.7-.7M18.36 5.64l.7-.7M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"/></svg>, t: "Discover AI facts", d: "GPT-4o mini generates a fascinating, little-known fact about your film. Results are cached for 30 seconds server-side." },
-            ].map((s, i) => (
-              <div key={s.n} style={{ ...glassStyle, padding: "2rem 2.25rem" }}>
-                <div style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: 1, background: "linear-gradient(90deg, transparent, rgba(201,148,12,0.4), transparent)" }} />
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-                  <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(201,148,12,0.08)", border: "1px solid rgba(201,148,12,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>{s.icon}</div>
-                  <span style={{ fontFamily: "var(--fp)", fontSize: 48, fontWeight: 900, color: "rgba(201,148,12,0.1)", lineHeight: 1, letterSpacing: "-0.03em" }}>{s.n}</span>
+          {/* HOW IT WORKS */}
+          <section style={{ borderTop: `1px solid ${theme.border}`, padding: "clamp(3rem,6vw,5rem) clamp(1.5rem,5vw,3rem)" }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "clamp(2rem,4vw,3.5rem)", flexWrap: "wrap", gap: 16 }}>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: theme.muted, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 10 }}>The process</p>
+                  <h2 style={{ fontFamily: "var(--fp)", fontSize: "clamp(28px,4vw,44px)", fontWeight: 900, letterSpacing: "-0.02em" }} className="accent-text">How it works</h2>
                 </div>
-                <h3 style={{ fontFamily: "var(--fp)", fontSize: 20, fontWeight: 700, color: textC, marginBottom: 12, lineHeight: 1.2 }}>{s.t}</h3>
-                <p style={{ fontSize: 13, color: text3, lineHeight: 1.8, fontWeight: 300 }}>{s.d}</p>
-                <div style={{ height: 1, background: `linear-gradient(90deg, rgba(201,148,12,0.4), transparent)`, marginTop: 20 }} />
-                <p style={{ fontSize: 11, color: "var(--gold)", fontWeight: 600, marginTop: 14, letterSpacing: "0.06em" }}>Step {i+1} of 3</p>
+                <p style={{ fontSize: 13, color: theme.muted, maxWidth: 300, lineHeight: 1.6, fontWeight: 300 }}>Three steps from sign-in to discovering your next fascinating film fact.</p>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "1.25rem" }}>
+                {[
+                  { n: "01", t: "Sign in securely", d: "Google OAuth authenticates your identity. We only access your name, email and profile photo.", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke={acc} strokeWidth="1.5"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke={acc} strokeWidth="1.5" strokeLinecap="round"/></svg> },
+                  { n: "02", t: "Save your film",   d: "Enter your all-time favourite. The entire app theme transforms based on your film's genre.",   icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4M4 20h16a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1z" stroke={acc} strokeWidth="1.5" strokeLinecap="round"/></svg> },
+                  { n: "03", t: "Discover AI facts", d: "GPT-4o mini generates little-known cinematic facts. Cached for 30s server-side, 30s client-side.", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3v1m0 16v1M4.22 4.22l.7.7m12.16 12.16.7.7M3 12h1m16 0h1M4.92 19.08l.7-.7M18.36 5.64l.7-.7M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" stroke={acc} strokeWidth="1.5" strokeLinecap="round"/></svg> },
+                ].map((s, i) => (
+                  <div key={s.n} className="glass" style={{ padding: "2rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 14, background: glow, border: `1px solid ${acc}33`, display: "flex", alignItems: "center", justifyContent: "center" }}>{s.icon}</div>
+                      <span style={{ fontFamily: "var(--fp)", fontSize: 52, fontWeight: 900, color: theme.border, lineHeight: 1, letterSpacing: "-0.03em" }}>{s.n}</span>
+                    </div>
+                    <h3 style={{ fontFamily: "var(--fp)", fontSize: 18, fontWeight: 700, color: theme.text, marginBottom: 10, lineHeight: 1.2 }}>{s.t}</h3>
+                    <p style={{ fontSize: 13, color: theme.muted, lineHeight: 1.8, fontWeight: 300 }}>{s.d}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* ══ API TAB ══ */}
+      {activeTab === "api" && (
+        <div style={{ position: "relative", zIndex: 1, flex: 1, padding: "clamp(2rem,5vw,3.5rem) clamp(1.5rem,5vw,3rem)", maxWidth: 1200, margin: "0 auto", width: "100%" }}>
+          <div className="fade-up" style={{ marginBottom: "2.5rem" }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: theme.muted, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 12 }}>API Reference</p>
+            <h2 style={{ fontFamily: "var(--fp)", fontSize: "clamp(28px,4vw,44px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 10 }} className="accent-text">Endpoints</h2>
+            <p style={{ fontSize: 14, color: theme.muted, fontWeight: 300, lineHeight: 1.7, maxWidth: 540 }}>
+              All endpoints require an active session. Unauthorized requests return <code style={{ background: "rgba(255,255,255,0.06)", padding: "2px 7px", borderRadius: 6, fontSize: 12, color: acc }}>401</code>.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            {[
+              {
+                method: "GET", path: "/api/me", status: 200,
+                desc: "Returns the current authenticated user's profile from the database.",
+                response: `{\n  "id": "cuid...",\n  "name": "Meghana Rabba",\n  "email": "meghana@gmail.com",\n  "image": "https://...",\n  "favoriteMovie": "Bridgerton",\n  "onboarded": true\n}`,
+                auth: true, cache: false,
+              },
+              {
+                method: "PUT", path: "/api/me/movie", status: 200,
+                desc: "Updates the user's favourite movie. Server-side validated with Zod (min 1, max 200 chars). Triggers fact cache invalidation on the client.",
+                body: `{ "movie": "The Dark Knight" }`,
+                response: `{ "favoriteMovie": "The Dark Knight" }`,
+                auth: true, cache: false,
+              },
+              {
+                method: "GET", path: "/api/fact", status: 200,
+                desc: "Returns a movie fact. Checks 60-second server cache first. Uses isGenerating flag to prevent burst duplicate generation. Falls back to last cached fact if OpenAI fails.",
+                response: `{\n  "factText": "The Joker's makeup...",\n  "generatedAt": "2026-03-30T...",\n  "cached": false\n}`,
+                auth: true, cache: true,
+              },
+            ].map((ep, i) => (
+              <div key={i} className="glass fade-up" style={{ padding: "1.75rem 2rem", animationDelay: `${i * 0.1}s` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+                  <span style={{ padding: "4px 12px", borderRadius: 8, background: ep.method === "GET" ? "rgba(22,163,90,0.15)" : "rgba(201,148,12,0.15)", color: ep.method === "GET" ? "#22C55E" : acc, fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", border: `1px solid ${ep.method === "GET" ? "rgba(22,163,90,0.3)" : acc + "44"}` }}>
+                    {ep.method}
+                  </span>
+                  <code style={{ fontFamily: "monospace", fontSize: 15, fontWeight: 700, color: theme.text, letterSpacing: "0.02em" }}>{ep.path}</code>
+                  <span style={{ padding: "3px 10px", borderRadius: 8, background: "rgba(22,163,90,0.1)", color: "#22C55E", fontSize: 11, fontWeight: 600, border: "1px solid rgba(22,163,90,0.25)", marginLeft: "auto" }}>
+                    {ep.status} OK
+                  </span>
+                  {ep.auth && <span style={{ padding: "3px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", color: theme.muted, fontSize: 11, fontWeight: 600, border: `1px solid ${theme.border}` }}>Auth required</span>}
+                  {ep.cache && <span style={{ padding: "3px 10px", borderRadius: 8, background: `${glow}`, color: acc, fontSize: 11, fontWeight: 600, border: `1px solid ${acc}33` }}>60s cached</span>}
+                </div>
+                <p style={{ fontSize: 14, color: theme.muted, lineHeight: 1.7, marginBottom: ep.body || ep.response ? 16 : 0, fontWeight: 300 }}>{ep.desc}</p>
+                <div style={{ display: "grid", gridTemplateColumns: ep.body ? "1fr 1fr" : "1fr", gap: 12 }}>
+                  {ep.body && (
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: theme.muted, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>Request body</p>
+                      <pre style={{ fontSize: 12, color: theme.text, background: "rgba(255,255,255,0.03)", border: `1px solid ${theme.border}`, borderRadius: 12, padding: "14px 16px", overflow: "auto", lineHeight: 1.6, fontFamily: "monospace" }}>{ep.body}</pre>
+                    </div>
+                  )}
+                  {ep.response && (
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: theme.muted, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>Response</p>
+                      <pre style={{ fontSize: 12, color: acc, background: "rgba(255,255,255,0.03)", border: `1px solid ${acc}33`, borderRadius: 12, padding: "14px 16px", overflow: "auto", lineHeight: 1.6, fontFamily: "monospace" }}>{ep.response}</pre>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
+
+            {/* Error responses */}
+            <div className="glass fade-up-4" style={{ padding: "1.75rem 2rem" }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: theme.muted, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 16 }}>Error responses</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px,1fr))", gap: 10 }}>
+                {[
+                  { code: "401", msg: "Unauthorized", desc: "No active session" },
+                  { code: "422", msg: "Unprocessable", desc: "Validation failed" },
+                  { code: "503", msg: "Service Error", desc: "OpenAI unavailable, no cached fallback" },
+                  { code: "202", msg: "Accepted", desc: "Generation in progress, retry shortly" },
+                ].map(e => (
+                  <div key={e.code} style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: `1px solid ${theme.border}` }}>
+                    <p style={{ fontSize: 18, fontWeight: 800, color: "#EF4444", fontFamily: "monospace", marginBottom: 4 }}>{e.code}</p>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: theme.text, marginBottom: 4 }}>{e.msg}</p>
+                    <p style={{ fontSize: 11, color: theme.muted, lineHeight: 1.5 }}>{e.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+      )}
 
       {/* ══ FOOTER ══ */}
-      <footer style={{ position: "relative", zIndex: 1, background: dark ? "rgba(7,5,3,0.96)" : "rgba(245,239,224,0.96)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: `1px solid ${borderC}`, padding: "2rem clamp(1.25rem,4vw,2.5rem)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+      <footer style={{ position: "relative", zIndex: 1, background: `${theme.bg1}F5`, backdropFilter: "blur(24px)", borderTop: `1px solid ${theme.border}`, padding: "1.75rem clamp(1.5rem,5vw,3rem)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <IconFilm />
-          <span style={{ fontFamily: "var(--fp)", fontSize: 16, fontWeight: 700, color: "var(--gold)" }}>Movie Memory</span>
+          <svg width="22" height="22" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="16" stroke={acc} strokeWidth="1.2" opacity="0.7"/><circle cx="20" cy="20" r="2" fill={acc} opacity="0.8"/></svg>
+          <span style={{ fontFamily: "var(--fp)", fontSize: 15, fontWeight: 700, color: acc }}>Movie Memory</span>
         </div>
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-          {["Next.js 15", "Prisma ORM", "PostgreSQL", "OpenAI API", "NextAuth v5"].map(t => (
-            <span key={t} style={{ fontSize: 12, color: text3, fontWeight: 400, letterSpacing: "0.03em" }}>{t}</span>
-          ))}
-        </div>
+        <span style={{ fontSize: 11, color: theme.muted, letterSpacing: "0.04em" }}>Next.js 15 · Prisma ORM · PostgreSQL · OpenAI API · NextAuth v5</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 10px rgba(34,197,94,0.7)", animation: "glow 2s ease-in-out infinite" }} />
-          <span style={{ fontSize: 12, color: text3, fontWeight: 500 }}>All systems operational</span>
+          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 10px rgba(34,197,94,0.7)", animation: "glow-pulse 2s ease-in-out infinite" }} />
+          <span style={{ fontSize: 11, color: theme.muted, fontWeight: 500 }}>All systems operational</span>
         </div>
       </footer>
     </div>
