@@ -121,8 +121,9 @@ export default function DashboardClient({ user }: { user: User }) {
         {/* Single large poster on the left */}
         <div style={{
           position: "absolute", left: 0, top: 0, bottom: 0,
-          width: "38vw", maxWidth: 560,
-          background: `linear-gradient(160deg, ${POSTER_COLORS[Math.abs(movie.charCodeAt(0) || 0) % POSTER_COLORS.length][0]} 0%, ${POSTER_COLORS[Math.abs(movie.charCodeAt(0) || 0) % POSTER_COLORS.length][1]} 100%)`,
+          width: "36vw", maxWidth: 520,
+          background: `linear-gradient(160deg, ${theme.bg2} 0%, color-mix(in srgb, ${theme.accent} 35%, ${theme.bg1}) 60%, ${theme.bg1} 100%)`,
+          borderRight: `1px solid ${theme.accent}22`,
           transition: "background 1.2s ease",
         }}>
           {/* Film grain */}
@@ -210,13 +211,13 @@ export default function DashboardClient({ user }: { user: User }) {
         <div style={{ position: "relative", zIndex: 1, flex: 1 }}>
 
           {/* HERO — editorial style, left-aligned */}
-          <section style={{ padding: "clamp(3rem,7vw,5.5rem) clamp(1.5rem,5vw,3rem)", borderBottom: `1px solid ${theme.border}`, maxWidth: 1200, margin: "0 auto", width: "100%" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2rem", alignItems: "center" }}>
+          <section style={{ padding: "clamp(3rem,7vw,5.5rem) clamp(1.5rem,5vw,3rem) clamp(3rem,7vw,5.5rem) clamp(36vw,40vw,600px)", borderBottom: `1px solid ${theme.border}`, width: "100%" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2rem", alignItems: "center", paddingLeft: "clamp(0px, 4vw, 2rem)" }}>
               <div className="fade-up">
                 <p style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: acc, marginBottom: 16, fontWeight: 700, opacity: 0.8 }}>
                   Your personal cinema — {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
                 </p>
-                <h1 style={{ fontFamily: "var(--fp)", fontSize: "clamp(42px,7vw,82px)", fontWeight: 900, lineHeight: 0.93, letterSpacing: "-0.025em", marginBottom: 20 }}>
+                <h1 style={{ fontFamily: "var(--fp)", fontSize: "clamp(38px,6vw,72px)", fontWeight: 900, lineHeight: 1.0, letterSpacing: "-0.025em", marginBottom: 20 }}>
                   <span style={{ display: "block", color: theme.text, opacity: 0.85 }}>Welcome</span>
                   <span style={{ display: "block", color: theme.text, opacity: 0.85 }}>back,</span>
                   <span className="accent-text" style={{ display: "block", fontStyle: "italic" }}>{firstName}.</span>
@@ -242,7 +243,7 @@ export default function DashboardClient({ user }: { user: User }) {
           </section>
 
           {/* MAIN CONTENT — asymmetric layout */}
-          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "clamp(2rem,4vw,3rem) clamp(1.5rem,5vw,3rem)", display: "grid", gridTemplateColumns: "minmax(0,1.6fr) minmax(0,1fr)", gap: "2rem" }}>
+          <div style={{ padding: "clamp(2rem,4vw,3rem) clamp(1.5rem,5vw,3rem) clamp(2rem,4vw,3rem) clamp(36vw,40vw,600px)", display: "grid", gridTemplateColumns: "minmax(0,1.6fr) minmax(0,1fr)", gap: "2rem" }}>
 
             {/* ── LEFT — Movie + Fact (big) ── */}
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
