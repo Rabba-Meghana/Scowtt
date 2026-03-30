@@ -11,19 +11,28 @@ export default async function OnboardingPage() {
   const firstName = user?.name?.split(" ")[0] ?? "there";
 
   return (
-    <main style={{ minHeight: "100vh", background: "var(--black)", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", position: "relative", overflow: "hidden" }}>
-      <div style={{ position: "absolute", top: "-20%", left: "50%", transform: "translateX(-50%)", width: 700, height: 700, borderRadius: "50%", background: "radial-gradient(circle, rgba(200,146,10,0.07) 0%, transparent 65%)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(200,146,10,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(200,146,10,0.025) 1px, transparent 1px)", backgroundSize: "60px 60px", pointerEvents: "none" }} />
-      <div className="fade-up" style={{ width: "100%", maxWidth: 480, position: "relative", zIndex: 1 }}>
-        <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 56, height: 56, borderRadius: 16, background: "rgba(200,146,10,0.1)", border: "1px solid rgba(200,146,10,0.3)", marginBottom: 20 }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    <main style={{ minHeight: "100vh", background: "var(--black)", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", position: "relative", overflow: "hidden", fontFamily: "var(--ff)" }}>
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201,148,12,0.1) 0%, transparent 65%)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,148,12,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(201,148,12,0.035) 1px, transparent 1px)", backgroundSize: "80px 80px", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.65) 100%)", pointerEvents: "none" }} />
+
+      <div className="fade-up" style={{ width: "100%", maxWidth: 500, position: "relative", zIndex: 2 }}>
+        <div style={{ textAlign: "center", marginBottom: "2.75rem" }}>
+          <div className="float" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 64, height: 64, borderRadius: 20, background: "rgba(201,148,12,0.1)", border: "1px solid rgba(201,148,12,0.3)", marginBottom: 24, boxShadow: "0 0 40px rgba(201,148,12,0.12)" }}>
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+              <path d="M7 2v11m0 0a4 4 0 1 0 8 0m-8 0h8m0-11v11" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M5 2h14" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
           </div>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-3)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 12 }}>✦ One last thing ✦</p>
-          <h1 style={{ fontFamily: "var(--fp)", fontSize: "clamp(28px,6vw,44px)", fontWeight: 900, lineHeight: 1.1, marginBottom: 12 }} className="gold-shimmer">Hey {firstName}!</h1>
-          <p style={{ fontSize: 14, color: "var(--text-3)", lineHeight: 1.7 }}>What&apos;s your all-time favourite movie? We&apos;ll generate fascinating AI facts about it.</p>
+          <p style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--text-3)", marginBottom: 14, fontWeight: 600 }}>One last step</p>
+          <h1 style={{ fontFamily: "var(--fp)", fontSize: "clamp(32px,6vw,52px)", fontWeight: 900, lineHeight: 1.05, marginBottom: 14, letterSpacing: "-0.01em" }}>
+            Hey, <span className="gold-text">{firstName}!</span>
+          </h1>
+          <p style={{ fontSize: 15, color: "var(--text-3)", lineHeight: 1.75, fontWeight: 300 }}>
+            What&apos;s your all-time favourite film?<br />We&apos;ll generate fascinating facts about it.
+          </p>
         </div>
-        <div className="glass" style={{ padding: "2rem" }}>
+        <div className="glass" style={{ padding: "2.25rem" }}>
           <OnboardingForm />
         </div>
       </div>
