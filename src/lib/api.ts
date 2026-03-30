@@ -46,12 +46,14 @@ export interface FactResponse {
 
 // ── Core request helper ───────────────────────────────────────────────────────
 
+const BASE = process.env.NEXT_PUBLIC_APP_URL ?? "";
+
 async function apiRequest<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<ApiResult<T>> {
   try {
-    const res = await fetch(path, {
+    const res = await fetch(`${BASE}${path}`, {
       ...options,
       credentials: "include",
       headers: {

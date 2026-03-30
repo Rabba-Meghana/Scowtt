@@ -89,9 +89,7 @@ export default function DashboardClient({ user }: { user: User }) {
   const bd  = theme.border;
   const tx  = theme.text;
   const mu  = theme.muted;
-  const p1  = theme.poster[0];
-  const p2  = theme.poster[1];
-  const p3  = theme.poster[2];
+  const [p1, p2, p3] = theme.poster;
 
   const glass: React.CSSProperties = {
     background: theme.card,
