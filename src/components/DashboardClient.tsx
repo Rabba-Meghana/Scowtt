@@ -126,7 +126,7 @@ export default function DashboardClient({ user }: { user: User }) {
           transition: "background 1.2s ease",
         }}>
           {/* Film grain */}
-          <div style={{ position: "absolute", inset: 0, backgroundImage: "url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E")", opacity: 0.6 }} />
+          <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 10px)", opacity: 1 }} />
           {/* Vertical lines like a film strip */}
           <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 28, display: "flex", flexDirection: "column", justifyContent: "space-evenly", padding: "20px 6px", background: "rgba(0,0,0,0.5)" }}>
             {Array.from({length: 18}).map((_,i) => (
