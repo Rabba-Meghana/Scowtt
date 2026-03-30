@@ -224,8 +224,8 @@ export default function DashboardClient({ user }: { user: User }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 12px 4px 5px", borderRadius: 50, background: gl, border: `1px solid ${acc}33` }}>
             <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", background: theme.bg2, border: `1.5px solid ${acc}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: acc, flexShrink: 0 }}>
               {user.image
-                ? <img src={user.image + "?sz=56"} alt="av" referrerPolicy="no-referrer" style={{ width: 28, height: 28, objectFit: "cover", display: "block" }} />
-                : (user.name?.[0] ?? "?")}
+                ? <img src={user.image} alt="av" referrerPolicy="no-referrer" width={28} height={28} style={{ width: 28, height: 28, objectFit: "cover", display: "block" }} />
+                : (user.name?.[0]?.toUpperCase() ?? "?")}
             </div>
             <span style={{ fontSize: 12, fontWeight: 500, color: tx }}>{firstName}</span>
           </div>
@@ -240,7 +240,7 @@ export default function DashboardClient({ user }: { user: User }) {
           <div style={{ flex: 1 }}>
 
             {/* HERO */}
-            <section style={{ padding: "clamp(2.5rem,5vw,4.5rem) 1.75rem clamp(2rem,4vw,3.5rem)", borderBottom: `1px solid ${bd}`, position: "relative" }}>
+            <section style={{ padding: "2.5rem 1.75rem 2rem", borderBottom: `1px solid ${bd}`, position: "relative" }}>
               <div style={{ position: "absolute", top: 0, right: 0, width: "40%", height: "100%", background: `radial-gradient(ellipse at right, ${gl.replace("0.24","0.07")} 0%, transparent 70%)`, pointerEvents: "none" }} />
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1.5rem", maxWidth: 900 }}>
                 <div className="fade-up">
@@ -263,7 +263,7 @@ export default function DashboardClient({ user }: { user: User }) {
                 <div className="fade-up-2" style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, maxWidth: 180 }}>
                   <div style={{ width: 64, height: 64, borderRadius: 14, overflow: "hidden", border: `2px solid ${acc}44`, boxShadow: `0 0 24px ${gl}`, background: theme.bg2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: acc, flexShrink: 0 }}>
                     {user.image
-                      ? <img src={user.image + "?sz=128"} alt="profile" referrerPolicy="no-referrer" style={{ width: 64, height: 64, objectFit: "cover", display: "block" }} />
+                      ? <img src={user.image} alt="profile" referrerPolicy="no-referrer" style={{ width: 64, height: 64, objectFit: "cover", display: "block" }} />
                       : (user.name?.[0] ?? "?")}
                   </div>
                   <div style={{ textAlign: "right", minWidth: 0, width: "100%" }}>
@@ -275,7 +275,7 @@ export default function DashboardClient({ user }: { user: User }) {
             </section>
 
             {/* TWO-COLUMN CONTENT */}
-            <div style={{ padding: "2rem 1.75rem", display: "grid", gridTemplateColumns: "minmax(0,1.6fr) minmax(260px,1fr)", gap: "1.25rem", alignItems: "start" }}>
+            <div style={{ padding: "1.5rem 1.75rem 2rem", display: "grid", gridTemplateColumns: "minmax(0,1.55fr) minmax(240px,1fr)", gap: "1.25rem", alignItems: "start" }}>
 
               {/* LEFT */}
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", minWidth: 0 }}>
@@ -312,7 +312,7 @@ export default function DashboardClient({ user }: { user: User }) {
                       </div>
                     ) : (
                       <div style={{ marginBottom: 10 }}>
-                        <h2 className="accent-text" style={{ fontFamily: "var(--fp)", fontSize: "clamp(28px,4vw,52px)", fontWeight: 900, lineHeight: 1.0, letterSpacing: "-0.02em", marginBottom: 6, transition: "all 0.8s" }}>
+                        <h2 className="accent-text" style={{ fontFamily: "var(--fp)", fontSize: "clamp(26px,3.5vw,46px)", fontWeight: 900, lineHeight: 1.05, letterSpacing: "-0.02em", marginBottom: 6, transition: "all 0.8s", textTransform: "none" }}>
                           {movie || <span style={{ opacity: 0.3, fontStyle: "italic", fontSize: "clamp(20px,3vw,32px)" }}>Set your favourite film</span>}
                         </h2>
                         {movie && <p style={{ fontSize: 11, color: mu }}>Theme: <span style={{ color: acc, fontWeight: 600 }}>{theme.label}</span> · AI by <span style={{ color: acc, fontWeight: 600 }}>GPT-4o mini</span></p>}
@@ -384,9 +384,9 @@ export default function DashboardClient({ user }: { user: User }) {
                   <div style={{ padding: "1.5rem" }}>
                     <p style={{ fontSize: 10, fontWeight: 800, color: mu, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 14 }}>Your profile</p>
                     {[
-                      { l: "Name",  v: user.name ?? "—" },
+                      { l: "Name",  v: user.name ?? "Not set" },
                       { l: "Email", v: user.email },
-                      { l: "Film",  v: movie || "—" },
+                      { l: "Film",  v: movie || "Not set" },
                       { l: "Theme", v: theme.label, accent: true },
                     ].map((r, i, a) => (
                       <div key={r.l}>
