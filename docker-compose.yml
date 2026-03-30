@@ -1,20 +1,18 @@
-version: "3.9"
-
 services:
   db:
     image: postgres:16-alpine
     container_name: movie_memory_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-moviememory}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-moviememory}
-      POSTGRES_DB: ${POSTGRES_DB:-moviememory}
+      POSTGRES_USER: moviememory
+      POSTGRES_PASSWORD: moviememory
+      POSTGRES_DB: moviememory
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-moviememory}"]
+      test: ["CMD-SHELL", "pg_isready -U moviememory"]
       interval: 5s
       timeout: 5s
       retries: 5
