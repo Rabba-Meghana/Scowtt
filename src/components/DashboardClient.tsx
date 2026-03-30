@@ -1,453 +1,373 @@
 "use client";
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import { signOut } from "next-auth/react";
-import {
-  updateMovie, getFact, getCachedFact, setCachedFact,
-  invalidateFactCache, type FactResponse,
-} from "@/lib/api";
+import { updateMovie, getFact, getCachedFact, setCachedFact, invalidateFactCache, type FactResponse } from "@/lib/api";
 
-interface User {
-  id: string; name: string | null; email: string;
-  image: string | null; favoriteMovie: string | null;
-}
+interface User { id: string; name: string | null; email: string; image: string | null; favoriteMovie: string | null; }
 
 export default function DashboardClient({ user }: { user: User }) {
-  const [movie, setMovie]           = useState(user.favoriteMovie ?? "");
-  const [editValue, setEditValue]   = useState("");
-  const [isEditing, setIsEditing]   = useState(false);
-  const [isSaving, setIsSaving]     = useState(false);
-  const [movieError, setMovieError] = useState<string | null>(null);
-  const [fact, setFact]             = useState<FactResponse | null>(null);
+  const [movie, setMovie]             = useState(user.favoriteMovie ?? "");
+  const [editValue, setEditValue]     = useState("");
+  const [isEditing, setIsEditing]     = useState(false);
+  const [isSaving, setIsSaving]       = useState(false);
+  const [movieError, setMovieError]   = useState<string | null>(null);
+  const [fact, setFact]               = useState<FactResponse | null>(null);
   const [factLoading, setFactLoading] = useState(true);
-  const [factError, setFactError]   = useState<string | null>(null);
-  const [dark, setDark]             = useState(false);
-  const [mounted, setMounted]       = useState(false);
-  const editInputRef = useRef<HTMLInputElement>(null);
+  const [factError, setFactError]     = useState<string | null>(null);
+  const [dark, setDark]               = useState(false);
+  const [mounted, setMounted]         = useState(false);
+  const editRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem("mm-dark");
-    if (saved === "true") { setDark(true); document.documentElement.classList.add("dark"); }
+    if (localStorage.getItem("mm-dark") === "true") {
+      setDark(true);
+      document.documentElement.classList.add("dark");
+    }
   }, []);
 
-  function toggleDark() {
-    setDark(d => {
-      const next = !d;
-      document.documentElement.classList.toggle("dark", next);
-      localStorage.setItem("mm-dark", String(next));
-      return next;
-    });
-  }
+  const toggleDark = () => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("mm-dark", String(next));
+  };
 
-  const loadFact = useCallback(async (forceRefresh = false) => {
+  const loadFact = useCallback(async (force = false) => {
     if (!movie) return;
-    if (!forceRefresh) {
-      const cached = getCachedFact(movie);
-      if (cached) { setFact(cached); setFactLoading(false); return; }
+    if (!force) {
+      const c = getCachedFact(movie);
+      if (c) { setFact(c); setFactLoading(false); return; }
     }
     setFactLoading(true); setFactError(null);
-    const result = await getFact();
-    if (result.ok) { setCachedFact(movie, result.data); setFact(result.data); }
-    else setFactError(result.error.message);
+    const r = await getFact();
+    if (r.ok) { setCachedFact(movie, r.data); setFact(r.data); }
+    else setFactError(r.error.message);
     setFactLoading(false);
   }, [movie]);
 
   useEffect(() => { loadFact(); }, [loadFact]);
-  useEffect(() => { if (isEditing) editInputRef.current?.focus(); }, [isEditing]);
+  useEffect(() => { if (isEditing) editRef.current?.focus(); }, [isEditing]);
 
-  function startEdit() { setEditValue(movie); setMovieError(null); setIsEditing(true); }
+  function startEdit()  { setEditValue(movie); setMovieError(null); setIsEditing(true); }
   function cancelEdit() { setIsEditing(false); setMovieError(null); }
 
   async function saveEdit() {
-    const trimmed = editValue.trim();
-    if (!trimmed) { setMovieError("Movie name cannot be empty."); return; }
-    if (trimmed.length > 200) { setMovieError("Max 200 characters."); return; }
+    const t = editValue.trim();
+    if (!t)       { setMovieError("Movie name cannot be empty."); return; }
+    if (t.length > 200) { setMovieError("Max 200 characters."); return; }
     setIsSaving(true); setMovieError(null);
     const prev = movie;
-    setMovie(trimmed); setIsEditing(false);
-    const result = await updateMovie(trimmed);
-    if (!result.ok) {
-      setMovie(prev); setIsEditing(true);
-      setEditValue(trimmed); setMovieError(result.error.message);
-    } else { invalidateFactCache(); setFact(null); loadFact(); }
+    setMovie(t); setIsEditing(false);
+    const r = await updateMovie(t);
+    if (!r.ok) { setMovie(prev); setIsEditing(true); setEditValue(t); setMovieError(r.error.message); }
+    else { invalidateFactCache(); setFact(null); loadFact(); }
     setIsSaving(false);
   }
 
   const initials = (user.name ?? user.email).split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
   const firstName = user.name?.split(" ")[0] ?? "there";
 
-  function relativeTime(iso: string) {
+  function timeAgo(iso: string) {
     const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
     if (s < 60) return "just now";
-    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-    return `${Math.floor(s / 86400)}d ago`;
+    if (s < 3600) return `${Math.floor(s/60)}m ago`;
+    if (s < 86400) return `${Math.floor(s/3600)}h ago`;
+    return `${Math.floor(s/86400)}d ago`;
   }
-
-  const isDark = dark;
-
-  // ── THEME TOKENS ──────────────────────────────────────────────────────────
-  const t = isDark ? {
-    pageBg:     "#0E0B04",
-    pageGrad:   "radial-gradient(ellipse at 20% 10%, rgba(200,146,10,0.12) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(180,100,5,0.08) 0%, transparent 50%)",
-    heroBg:     "linear-gradient(180deg, rgba(200,146,10,0.08) 0%, transparent 100%)",
-    glass:      "rgba(30,22,6,0.75)",
-    glassBorder:"rgba(200,146,10,0.18)",
-    glassShadow:"0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(200,146,10,0.12)",
-    surfaceBg:  "rgba(40,30,8,0.6)",
-    surfaceBorder:"rgba(200,146,10,0.12)",
-    inputBg:    "rgba(30,22,6,0.8)",
-    inputBorder:"rgba(200,146,10,0.25)",
-    textPrimary:"#F5ECD8",
-    textSecond: "#C8920A",
-    textMuted:  "#8A7040",
-    gold:       "#C8920A",
-    goldHover:  "#D4A82A",
-    pillBg:     "rgba(200,146,10,0.12)",
-    pillBorder: "rgba(200,146,10,0.25)",
-    navBg:      "rgba(14,11,4,0.85)",
-    navBorder:  "rgba(200,146,10,0.15)",
-    footerBg:   "rgba(14,11,4,0.9)",
-    statBg:     "rgba(40,30,8,0.8)",
-    divider:    "rgba(200,146,10,0.1)",
-    badgeBg:    "rgba(200,146,10,0.15)",
-    badgeText:  "#C8920A",
-  } : {
-    pageBg:     "#FFFDF7",
-    pageGrad:   "radial-gradient(ellipse at 20% 10%, rgba(200,146,10,0.07) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(212,168,42,0.05) 0%, transparent 50%)",
-    heroBg:     "linear-gradient(180deg, rgba(200,146,10,0.06) 0%, transparent 100%)",
-    glass:      "rgba(255,253,247,0.82)",
-    glassBorder:"rgba(200,146,10,0.18)",
-    glassShadow:"0 8px 40px rgba(180,130,10,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
-    surfaceBg:  "rgba(253,246,232,0.7)",
-    surfaceBorder:"rgba(200,146,10,0.12)",
-    inputBg:    "rgba(255,253,247,0.9)",
-    inputBorder:"rgba(200,146,10,0.3)",
-    textPrimary:"#1A1612",
-    textSecond: "#9A6B1A",
-    textMuted:  "#A08040",
-    gold:       "#C8920A",
-    goldHover:  "#B07D2E",
-    pillBg:     "rgba(200,146,10,0.08)",
-    pillBorder: "rgba(200,146,10,0.2)",
-    navBg:      "rgba(255,253,247,0.85)",
-    navBorder:  "rgba(200,146,10,0.15)",
-    footerBg:   "rgba(255,253,247,0.9)",
-    statBg:     "rgba(253,246,232,0.8)",
-    divider:    "rgba(200,146,10,0.1)",
-    badgeBg:    "rgba(200,146,10,0.1)",
-    badgeText:  "#9A6B1A",
-  };
 
   if (!mounted) return null;
 
-  return (
-    <div style={{
-      minHeight: "100vh", display: "flex", flexDirection: "column",
-      background: t.pageBg, backgroundImage: t.pageGrad,
-      fontFamily: "var(--font-dm-sans)", transition: "background 0.3s ease",
-    }}>
+  /* ─── Shared style tokens ─── */
+  const G = "var(--gold)";
+  const T = "var(--text)";
+  const T2 = "var(--text-2)";
+  const T3 = "var(--text-3)";
+  const BG = "var(--cream)";
+  const BG2 = "var(--cream-2)";
+  const BG3 = "var(--cream-3)";
+  const BD = "var(--border)";
+  const BDS = "var(--border-strong)";
+  const SH = "var(--shadow)";
+  const SHL = "var(--shadow-lg)";
+  const FF = "var(--font-dm-sans)";
+  const FP = "var(--font-playfair)";
 
-      {/* ── NAVBAR ── */}
+  const glassCard: React.CSSProperties = {
+    background: dark ? "rgba(22,16,4,0.75)" : "rgba(255,253,247,0.78)",
+    backdropFilter: "blur(32px)",
+    WebkitBackdropFilter: "blur(32px)",
+    border: `1px solid ${BD}`,
+    borderRadius: 24,
+    boxShadow: SHL,
+  };
+
+  const btn = (primary = false): React.CSSProperties => ({
+    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
+    padding: primary ? "10px 22px" : "9px 18px",
+    borderRadius: 12, cursor: "pointer", fontFamily: FF,
+    fontSize: 13, fontWeight: 600, transition: "all 0.18s",
+    background: primary ? G : "transparent",
+    border: primary ? "none" : `1px solid ${BDS}`,
+    color: primary ? "#fff" : T3,
+    boxShadow: primary ? "0 4px 16px rgba(200,146,10,0.3)" : "none",
+  });
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: BG, fontFamily: FF, position: "relative", overflow: "hidden" }}>
+
+      {/* ── BG ambient glow ── */}
+      <div style={{ position: "fixed", top: -200, right: -200, width: 700, height: 700, borderRadius: "50%", background: "radial-gradient(circle, rgba(200,146,10,0.06) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "fixed", bottom: -200, left: -200, width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(200,146,10,0.04) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
+
+      {/* ══════════════════════════════════════════════
+          NAVBAR
+      ══════════════════════════════════════════════ */}
       <nav style={{
-        position: "sticky", top: 0, zIndex: 100,
-        background: t.navBg,
-        backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-        borderBottom: `1px solid ${t.navBorder}`,
-        height: 62, display: "flex", alignItems: "center",
-        padding: "0 2rem", gap: 12,
+        position: "sticky", top: 0, zIndex: 200,
+        background: dark ? "rgba(14,10,2,0.88)" : "rgba(255,253,247,0.88)",
+        backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+        borderBottom: `1px solid ${BD}`,
+        height: 64, display: "flex", alignItems: "center",
+        padding: "0 clamp(1rem, 4vw, 2.5rem)", gap: 14,
       }}>
-        {/* Logo — navigates to dashboard */}
-        <a href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none", flexShrink: 0 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 10,
-            background: t.pillBg, border: `1px solid ${t.glassBorder}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-              <circle cx="16" cy="16" r="12" stroke={t.gold} strokeWidth="1.5"/>
-              <circle cx="16" cy="16" r="3" fill={t.gold} opacity="0.3"/>
-              <circle cx="16" cy="16" r="1.5" fill={t.gold}/>
-              <circle cx="16" cy="7.5" r="2" fill={t.gold} opacity="0.65"/>
-              <circle cx="16" cy="24.5" r="2" fill={t.gold} opacity="0.65"/>
-              <circle cx="7.5" cy="16" r="2" fill={t.gold} opacity="0.65"/>
-              <circle cx="24.5" cy="16" r="2" fill={t.gold} opacity="0.65"/>
+        {/* Logo — real href link */}
+        <a href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", flexShrink: 0 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 11, background: BG2, border: `1px solid ${BDS}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: SH }}>
+            <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
+              <circle cx="20" cy="20" r="16" stroke={G} strokeWidth="1.6"/>
+              <circle cx="20" cy="20" r="3" fill={G} opacity="0.25"/>
+              <circle cx="20" cy="20" r="1.8" fill={G}/>
+              <circle cx="20" cy="9"  r="2.4" fill={G} opacity="0.65"/>
+              <circle cx="20" cy="31" r="2.4" fill={G} opacity="0.65"/>
+              <circle cx="9"  cy="20" r="2.4" fill={G} opacity="0.65"/>
+              <circle cx="31" cy="20" r="2.4" fill={G} opacity="0.65"/>
             </svg>
           </div>
-          <span style={{ fontFamily: "var(--font-playfair)", fontSize: 18, fontWeight: 700, color: t.gold, letterSpacing: "-0.01em" }}>
-            Movie Memory
-          </span>
+          <span style={{ fontFamily: FP, fontSize: 20, fontWeight: 700, color: G, letterSpacing: "-0.01em" }}>Movie Memory</span>
         </a>
 
         <div style={{ flex: 1 }} />
 
-        {/* Dark toggle */}
-        <button onClick={toggleDark} aria-label="Toggle dark mode" style={{
-          width: 40, height: 40, borderRadius: 10,
-          background: t.pillBg, border: `1px solid ${t.pillBorder}`,
-          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          transition: "all 0.2s",
-        }}>
-          {isDark
-            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke={t.gold} strokeWidth="1.8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke={t.gold} strokeWidth="1.8" strokeLinecap="round"/></svg>
-            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke={t.textMuted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        {/* Theme toggle */}
+        <button onClick={toggleDark} title="Toggle dark mode" style={{ width: 40, height: 40, borderRadius: 11, background: BG2, border: `1px solid ${BD}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.18s" }}>
+          {dark
+            ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke={G} strokeWidth="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke={G} strokeWidth="2" strokeLinecap="round"/></svg>
+            : <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke={T3} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           }
         </button>
 
         {/* User pill */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8,
-          padding: "6px 14px 6px 7px", borderRadius: 10,
-          background: t.pillBg, border: `1px solid ${t.pillBorder}`,
-        }}>
-          <div style={{
-            width: 30, height: 30, borderRadius: "50%", overflow: "hidden",
-            background: t.surfaceBg, border: `1.5px solid ${t.glassBorder}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 11, fontWeight: 700, color: t.gold, flexShrink: 0,
-          }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 14px 6px 6px", borderRadius: 50, background: BG2, border: `1px solid ${BD}`, boxShadow: SH }}>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: BG3, border: `1.5px solid ${BDS}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: G, flexShrink: 0 }}>
             {user.image
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={user.image} alt="avatar" referrerPolicy="no-referrer" style={{ width: 30, height: 30, objectFit: "cover" }} />
+              ? <img src={user.image} alt="av" referrerPolicy="no-referrer" style={{ width: 32, height: 32, objectFit: "cover" }} />
               : initials}
           </div>
-          <span style={{ fontSize: 13, fontWeight: 500, color: t.textPrimary, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {user.name ?? user.email}
-          </span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: T, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name ?? user.email}</span>
         </div>
 
         {/* Logout */}
-        <button onClick={() => signOut({ callbackUrl: "/" })} style={{
-          display: "flex", alignItems: "center", gap: 6,
-          padding: "8px 18px", borderRadius: 10,
-          background: t.gold, border: "none",
-          color: "#fff", fontSize: 13, fontWeight: 600,
-          cursor: "pointer", fontFamily: "var(--font-dm-sans)",
-          transition: "all 0.15s",
-        }}
-          onMouseEnter={e => (e.currentTarget.style.background = t.goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = t.gold)}
-        >
+        <button onClick={() => signOut({ callbackUrl: "/" })} style={btn(true)}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           Logout
         </button>
       </nav>
 
-      {/* ── HERO ── */}
+      {/* ══════════════════════════════════════════════
+          HERO BANNER
+      ══════════════════════════════════════════════ */}
       <div style={{
-        background: t.heroBg,
-        borderBottom: `1px solid ${t.divider}`,
-        padding: "3.5rem 2rem 3rem",
-        textAlign: "center",
+        background: dark
+          ? "linear-gradient(160deg, rgba(200,146,10,0.1) 0%, rgba(14,10,2,0) 60%)"
+          : "linear-gradient(160deg, rgba(200,146,10,0.08) 0%, rgba(255,253,247,0) 60%)",
+        borderBottom: `1px solid ${BD}`,
+        padding: "clamp(2rem,5vw,4rem) clamp(1rem,4vw,2.5rem) clamp(1.5rem,4vw,3rem)",
+        position: "relative", zIndex: 1,
       }}>
-        {/* Big avatar */}
-        <div style={{
-          width: 80, height: 80, borderRadius: "50%", overflow: "hidden",
-          background: t.surfaceBg, border: `2px solid ${t.glassBorder}`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 26, fontWeight: 800, color: t.gold,
-          margin: "0 auto 18px",
-          boxShadow: `0 0 0 6px ${t.pillBg}`,
-        }}>
-          {user.image
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={user.image} alt="avatar" referrerPolicy="no-referrer" style={{ width: 80, height: 80, objectFit: "cover" }} />
-            : initials}
+        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", alignItems: "center", gap: "clamp(1.5rem,4vw,3rem)", flexWrap: "wrap" }}>
+          {/* Big avatar with pulse ring */}
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <div style={{ position: "absolute", inset: -6, borderRadius: "50%", border: `2px solid ${G}`, opacity: 0.3, animation: "pulse-ring 2.5s ease-out infinite" }} />
+            <div style={{ width: 90, height: 90, borderRadius: "50%", overflow: "hidden", background: BG3, border: `3px solid ${BDS}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, fontWeight: 800, color: G, boxShadow: `0 0 0 5px ${dark ? "rgba(200,146,10,0.1)" : "rgba(200,146,10,0.08)"}` }}>
+              {user.image
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={user.image} alt="profile" referrerPolicy="no-referrer" style={{ width: 90, height: 90, objectFit: "cover" }} />
+                : initials}
+            </div>
+          </div>
+          {/* Hero text */}
+          <div className="fade-up">
+            <p style={{ fontSize: 11, fontWeight: 600, color: G, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 8 }}>Your personal cinema</p>
+            <h1 style={{ fontFamily: FP, fontSize: "clamp(28px,5vw,48px)", fontWeight: 700, color: T, lineHeight: 1.12, marginBottom: 8 }}>
+              Welcome back, <span style={{ color: G, fontStyle: "italic" }}>{firstName}!</span>
+            </h1>
+            <p style={{ fontSize: 14, color: T3, maxWidth: 460 }}>
+              {user.email} · Your movie, your facts, your memory.
+            </p>
+          </div>
         </div>
-        <p style={{ fontSize: 12, fontWeight: 600, color: t.gold, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
-          Your personal cinema
-        </p>
-        <h1 style={{
-          fontFamily: "var(--font-playfair)", fontSize: "clamp(28px, 5vw, 44px)",
-          fontWeight: 700, color: t.textPrimary, lineHeight: 1.15, marginBottom: 8,
-        }}>
-          Welcome back, <span style={{ color: t.gold }}>{firstName}!</span>
-        </h1>
-        <p style={{ fontSize: 14, color: t.textMuted, maxWidth: 380, margin: "0 auto" }}>
-          {user.email}
-        </p>
       </div>
 
-      {/* ── CONTENT ── */}
-      <main style={{ flex: 1, maxWidth: 1040, width: "100%", margin: "0 auto", padding: "2.5rem 1.5rem", display: "grid", gridTemplateColumns: "1fr 320px", gap: "1.5rem", alignItems: "start" }}>
+      {/* ══════════════════════════════════════════════
+          MAIN CONTENT
+      ══════════════════════════════════════════════ */}
+      <main style={{ flex: 1, maxWidth: 960, width: "100%", margin: "0 auto", padding: "clamp(1.5rem,4vw,2.5rem) clamp(1rem,4vw,1.5rem)", display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: "1.5rem", alignItems: "start", position: "relative", zIndex: 1 }}>
 
-        {/* LEFT */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        {/* ── LEFT COLUMN ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
 
-          {/* Movie glass card */}
-          <div style={{
-            background: t.glass, backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
-            border: `1px solid ${t.glassBorder}`, borderRadius: 20,
-            boxShadow: t.glassShadow, padding: "1.75rem",
-            animation: "slideUp 0.45s ease-out forwards",
-          }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: t.gold, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
-                  Favourite Movie
-                </p>
-                {isEditing ? (
-                  <div>
-                    <input
-                      ref={editInputRef}
-                      type="text" value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
-                      placeholder="Enter movie name…"
-                      maxLength={200}
-                      style={{
-                        width: "100%", padding: "10px 14px", borderRadius: 10, marginBottom: 10,
-                        background: t.inputBg, border: `1.5px solid ${t.inputBorder}`,
-                        color: t.textPrimary, fontSize: 15, outline: "none",
-                        fontFamily: "var(--font-dm-sans)",
-                      }}
-                    />
-                    {movieError && <p style={{ fontSize: 12, color: t.gold, marginBottom: 10 }}>{movieError}</p>}
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={saveEdit} disabled={isSaving || !editValue.trim()} style={{
-                        padding: "8px 18px", borderRadius: 9, background: t.gold,
-                        border: "none", color: "#fff", fontSize: 13, fontWeight: 600,
-                        cursor: "pointer", fontFamily: "var(--font-dm-sans)", opacity: (isSaving || !editValue.trim()) ? 0.5 : 1,
-                      }}>{isSaving ? "Saving…" : "Save"}</button>
-                      <button onClick={cancelEdit} style={{
-                        padding: "8px 18px", borderRadius: 9, background: "transparent",
-                        border: `1px solid ${t.glassBorder}`, color: t.textMuted,
-                        fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--font-dm-sans)",
-                      }}>Cancel</button>
-                    </div>
-                  </div>
-                ) : (
-                  <h2 style={{
-                    fontFamily: "var(--font-playfair)", fontSize: "clamp(22px, 3.5vw, 32px)",
-                    fontWeight: 700, color: t.textPrimary, lineHeight: 1.2,
-                  }}>
-                    {movie || "No movie set"}
-                  </h2>
-                )}
+          {/* MOVIE CARD */}
+          <div className="fade-up" style={{ ...glassCard, padding: "clamp(1.25rem,4vw,2rem)" }}>
+            {/* Card header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 9, background: dark ? "rgba(200,146,10,0.15)" : "rgba(200,146,10,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke={G} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: G, letterSpacing: "0.1em", textTransform: "uppercase" }}>Favourite Movie</span>
               </div>
               {!isEditing && (
-                <button onClick={startEdit} style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  padding: "7px 14px", borderRadius: 9,
-                  background: t.surfaceBg, border: `1px solid ${t.glassBorder}`,
-                  color: t.textMuted, fontSize: 12, fontWeight: 500,
-                  cursor: "pointer", flexShrink: 0, fontFamily: "var(--font-dm-sans)",
-                  transition: "all 0.15s",
-                }}>
-                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                    <path d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                <button onClick={startEdit} style={{ ...btn(false), padding: "7px 14px", fontSize: 12 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   Edit
                 </button>
               )}
             </div>
 
-            <div style={{ height: 1, background: t.divider, margin: "0 0 20px" }} />
+            {isEditing ? (
+              <div>
+                <input
+                  ref={editRef} type="text" value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
+                  placeholder="e.g. The Shawshank Redemption"
+                  maxLength={200}
+                  style={{
+                    width: "100%", padding: "12px 16px", borderRadius: 12, marginBottom: 12,
+                    background: dark ? "rgba(30,22,4,0.8)" : "rgba(255,253,247,0.9)",
+                    border: `1.5px solid ${G}`,
+                    color: T, fontSize: 16, outline: "none", fontFamily: FF,
+                    boxShadow: "0 0 0 4px rgba(200,146,10,0.1)",
+                  }}
+                />
+                {movieError && <p style={{ fontSize: 12, color: G, marginBottom: 10 }}>{movieError}</p>}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={saveEdit} disabled={isSaving || !editValue.trim()} style={{ ...btn(true), opacity: (isSaving || !editValue.trim()) ? 0.5 : 1 }}>
+                    {isSaving ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 0.8s linear infinite" }}><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="30 60"/></svg> Saving…</> : "Save changes"}
+                  </button>
+                  <button onClick={cancelEdit} style={btn(false)}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <h2 style={{ fontFamily: FP, fontSize: "clamp(26px,4vw,40px)", fontWeight: 700, color: T, lineHeight: 1.15, marginBottom: 4 }}>
+                {movie || <span style={{ color: T3, fontStyle: "italic" }}>No movie set yet</span>}
+              </h2>
+            )}
 
-            {/* Fact section */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <circle cx="7" cy="7" r="6" stroke={t.gold} strokeWidth="1.2"/>
-                <path d="M7 6v4M7 4.5v.5" stroke={t.gold} strokeWidth="1.3" strokeLinecap="round"/>
-              </svg>
-              <span style={{ fontSize: 13, fontWeight: 600, color: t.textSecond }}>Recent Fact</span>
-              <span style={{
-                fontSize: 11, padding: "2px 8px", borderRadius: 6,
-                background: t.badgeBg, color: t.badgeText,
-                border: `1px solid ${t.pillBorder}`,
-              }}>OpenAI</span>
-              {fact?.cached && <span style={{ fontSize: 11, color: t.textMuted }}>· cached</span>}
-              {fact && <span style={{ fontSize: 11, color: t.textMuted, marginLeft: "auto" }}>{relativeTime(fact.generatedAt)}</span>}
+            {!isEditing && movie && (
+              <p style={{ fontSize: 13, color: T3, marginTop: 8 }}>
+                Fact powered by <span style={{ color: G, fontWeight: 600 }}>OpenAI GPT-4o mini</span>
+              </p>
+            )}
+
+            {/* Divider */}
+            <div style={{ height: 1, background: BD, margin: "20px 0" }} />
+
+            {/* FACT SECTION */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={G} strokeWidth="1.8"/><path d="M12 16v-4M12 8h.01" stroke={G} strokeWidth="2" strokeLinecap="round"/></svg>
+              <span style={{ fontSize: 13, fontWeight: 600, color: T2 }}>Recent Fact</span>
+              <span style={{ fontSize: 11, padding: "2px 9px", borderRadius: 20, background: dark ? "rgba(200,146,10,0.15)" : "rgba(200,146,10,0.1)", color: G, fontWeight: 500, border: `1px solid ${BD}` }}>OpenAI</span>
+              {fact?.cached && <span style={{ fontSize: 11, color: T3, padding: "2px 8px", borderRadius: 20, border: `1px solid ${BD}` }}>cached</span>}
+              {fact && <span style={{ fontSize: 12, color: T3, marginLeft: "auto" }}>{timeAgo(fact.generatedAt)}</span>}
             </div>
 
             {factLoading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {[100, 88, 72].map((w, i) => (
-                  <div key={i} style={{
-                    height: 14, width: `${w}%`, borderRadius: 6,
-                    background: t.surfaceBg, animation: "shimmer 1.6s ease-in-out infinite",
-                    animationDelay: `${i * 0.15}s`,
-                  }} />
+                {[100, 90, 76, 55].map((w, i) => (
+                  <div key={i} className="skel" style={{ height: 15, width: `${w}%`, animationDelay: `${i * 0.1}s` }} />
                 ))}
               </div>
             ) : factError ? (
-              <div style={{ padding: "14px 16px", borderRadius: 12, background: t.surfaceBg, border: `1px solid ${t.glassBorder}`, fontSize: 13, color: t.textMuted }}>
-                {factError}
+              <div style={{ padding: "16px 18px", borderRadius: 14, background: dark ? "rgba(200,146,10,0.06)" : "rgba(200,146,10,0.04)", border: `1px solid ${BD}`, fontSize: 13, color: T3 }}>
+                ⚠️ {factError}
               </div>
             ) : fact ? (
-              <p style={{
-                fontSize: 15, lineHeight: 1.8, color: t.textPrimary,
-                padding: "18px 20px", borderRadius: 14,
-                background: t.surfaceBg, border: `1px solid ${t.surfaceBorder}`,
-              }}>
-                {fact.factText}
-              </p>
+              <div style={{ padding: "18px 20px", borderRadius: 16, background: dark ? "rgba(200,146,10,0.06)" : "rgba(200,146,10,0.04)", border: `1px solid ${BD}`, position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: 0, left: 0, width: 4, height: "100%", background: G, borderRadius: "4px 0 0 4px" }} />
+                <p style={{ fontSize: 15, lineHeight: 1.8, color: T, fontFamily: FF, paddingLeft: 4 }}>{fact.factText}</p>
+              </div>
             ) : null}
 
             {!factLoading && movie && (
-              <button onClick={() => loadFact(true)} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                marginTop: 14, padding: "8px 16px", borderRadius: 9,
-                background: "transparent", border: `1px solid ${t.glassBorder}`,
-                color: t.textMuted, fontSize: 13, fontWeight: 500,
-                cursor: "pointer", fontFamily: "var(--font-dm-sans)", transition: "all 0.15s",
-              }}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M10.5 6A4.5 4.5 0 1 1 6 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                  <path d="M10.5 1.5V4.5H7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                New fact
+              <button onClick={() => loadFact(true)} style={{ ...btn(false), marginTop: 14, fontSize: 13 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Generate new fact
               </button>
             )}
           </div>
         </div>
 
-        {/* RIGHT */}
+        {/* ── RIGHT COLUMN ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
 
-          {/* Profile glass card */}
-          <div style={{
-            background: t.glass, backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
-            border: `1px solid ${t.glassBorder}`, borderRadius: 20,
-            boxShadow: t.glassShadow, padding: "1.5rem",
-            animation: "slideUp 0.5s ease-out forwards",
-          }}>
-            <p style={{ fontSize: 11, fontWeight: 600, color: t.gold, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>Profile</p>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              {[
-                { label: "Name", value: user.name ?? "—" },
-                { label: "Email", value: user.email },
-                { label: "Favourite movie", value: movie || "—" },
-              ].map((row, i, arr) => (
-                <div key={row.label}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0" }}>
-                    <span style={{ fontSize: 12, color: t.textMuted }}>{row.label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: t.textPrimary, maxWidth: 160, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.value}</span>
-                  </div>
-                  {i < arr.length - 1 && <div style={{ height: 1, background: t.divider }} />}
-                </div>
-              ))}
+          {/* PROFILE CARD */}
+          <div className="fade-up-2" style={{ ...glassCard, padding: "1.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: dark ? "rgba(200,146,10,0.15)" : "rgba(200,146,10,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke={G} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: G, letterSpacing: "0.1em", textTransform: "uppercase" }}>Profile</span>
             </div>
+
+            {/* Avatar center */}
+            <div style={{ textAlign: "center", marginBottom: 20, paddingBottom: 20, borderBottom: `1px solid ${BD}` }}>
+              <div style={{ width: 64, height: 64, borderRadius: "50%", overflow: "hidden", background: BG3, border: `2px solid ${BDS}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, color: G, margin: "0 auto 12px", boxShadow: `0 4px 16px rgba(200,146,10,0.2)` }}>
+                {user.image
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={user.image} alt="profile" referrerPolicy="no-referrer" style={{ width: 64, height: 64, objectFit: "cover" }} />
+                  : initials}
+              </div>
+              <p style={{ fontFamily: FP, fontSize: 17, fontWeight: 700, color: T, marginBottom: 3 }}>{user.name ?? "—"}</p>
+              <p style={{ fontSize: 12, color: T3 }}>{user.email}</p>
+            </div>
+
+            {[
+              { label: "Name",  value: user.name ?? "—" },
+              { label: "Email", value: user.email },
+              { label: "Movie", value: movie || "—" },
+            ].map((r, i, a) => (
+              <div key={r.label}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0" }}>
+                  <span style={{ fontSize: 12, color: T3, fontWeight: 500 }}>{r.label}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: T, maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>{r.value}</span>
+                </div>
+                {i < a.length - 1 && <div style={{ height: 1, background: BD }} />}
+              </div>
+            ))}
           </div>
 
-          {/* Stats glass card */}
-          <div style={{
-            background: t.glass, backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
-            border: `1px solid ${t.glassBorder}`, borderRadius: 20,
-            boxShadow: t.glassShadow, padding: "1.5rem",
-            animation: "slideUp 0.55s ease-out forwards",
-          }}>
-            <p style={{ fontSize: 11, fontWeight: 600, color: t.gold, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>At a glance</p>
+          {/* STATS CARD */}
+          <div className="fade-up-3" style={{ ...glassCard, padding: "1.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: dark ? "rgba(200,146,10,0.15)" : "rgba(200,146,10,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" stroke={G} strokeWidth="2"/><path d="M8 21h8M12 17v4" stroke={G} strokeWidth="2" strokeLinecap="round"/></svg>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: G, letterSpacing: "0.1em", textTransform: "uppercase" }}>Tech stack</span>
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {[
-                { label: "AI model",     value: "GPT-4o mini" },
-                { label: "Cache",        value: fact?.cached ? "Cached" : "Live" },
-                { label: "Auth",         value: "Google" },
-                { label: "DB",           value: "Postgres" },
+                { label: "AI", value: "GPT-4o mini", icon: "🤖" },
+                { label: "Auth", value: "Google OAuth", icon: "🔐" },
+                { label: "Database", value: "PostgreSQL", icon: "🗄️" },
+                { label: "Cache", value: fact?.cached ? "Hit ✓" : "Live ↻", icon: "⚡" },
               ].map(s => (
-                <div key={s.label} style={{ background: t.statBg, borderRadius: 12, padding: "12px 14px", border: `1px solid ${t.surfaceBorder}` }}>
-                  <p style={{ fontSize: 10, color: t.textMuted, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.07em" }}>{s.label}</p>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: t.textPrimary }}>{s.value}</p>
+                <div key={s.label} style={{ background: dark ? "rgba(200,146,10,0.06)" : "rgba(200,146,10,0.04)", border: `1px solid ${BD}`, borderRadius: 14, padding: "12px 14px" }}>
+                  <p style={{ fontSize: 18, marginBottom: 5 }}>{s.icon}</p>
+                  <p style={{ fontSize: 10, color: T3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>{s.label}</p>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: T }}>{s.value}</p>
                 </div>
               ))}
             </div>
@@ -455,27 +375,29 @@ export default function DashboardClient({ user }: { user: User }) {
         </div>
       </main>
 
-      {/* ── FOOTER ── */}
+      {/* ══════════════════════════════════════════════
+          FOOTER
+      ══════════════════════════════════════════════ */}
       <footer style={{
-        marginTop: "auto",
-        background: t.footerBg,
+        position: "relative", zIndex: 1,
+        background: dark ? "rgba(14,10,2,0.9)" : "rgba(255,253,247,0.9)",
         backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-        borderTop: `1px solid ${t.divider}`,
-        padding: "1.5rem 2rem",
+        borderTop: `1px solid ${BD}`,
+        padding: "1.5rem clamp(1rem,4vw,2.5rem)",
         display: "flex", alignItems: "center", justifyContent: "space-between",
         flexWrap: "wrap", gap: 12,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="12" stroke={t.gold} strokeWidth="1.5" opacity="0.6"/>
-            <circle cx="16" cy="16" r="1.5" fill={t.gold} opacity="0.6"/>
+          <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="15" stroke={G} strokeWidth="1.5" opacity="0.7"/>
+            <circle cx="20" cy="20" r="2" fill={G} opacity="0.7"/>
           </svg>
-          <span style={{ fontSize: 12, color: t.textMuted, fontWeight: 500 }}>Movie Memory</span>
+          <span style={{ fontSize: 13, color: T2, fontWeight: 600, fontFamily: FP }}>Movie Memory</span>
         </div>
-        <span style={{ fontSize: 12, color: t.textMuted, opacity: 0.6 }}>Powered by OpenAI · Next.js · Prisma · Postgres</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E" }} />
-          <span style={{ fontSize: 12, color: t.textMuted }}>All systems operational</span>
+        <span style={{ fontSize: 12, color: T3 }}>Next.js · Prisma · Postgres · OpenAI · NextAuth</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 6px rgba(34,197,94,0.5)" }} />
+          <span style={{ fontSize: 12, color: T3, fontWeight: 500 }}>All systems operational</span>
         </div>
       </footer>
     </div>
