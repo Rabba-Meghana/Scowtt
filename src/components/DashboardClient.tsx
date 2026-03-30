@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { signOut } from "next-auth/react";
 import { updateMovie, getFact, getCachedFact, setCachedFact, invalidateFactCache, type FactResponse } from "@/lib/api";
-import { getMovieTheme, POSTER_FILMS, POSTER_COLORS, type MovieTheme } from "@/lib/movieThemes";
+import { getMovieTheme, POSTER_COLORS, type MovieTheme } from "@/lib/movieThemes";
 
 interface User { id: string; name: string | null; email: string; image: string | null; favoriteMovie: string | null; }
 
@@ -116,26 +116,41 @@ export default function DashboardClient({ user }: { user: User }) {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: theme.bg1, color: theme.text, fontFamily: "var(--ff)", position: "relative", overflow: "hidden", transition: "background 1.2s ease, color 0.6s ease" }}>
 
-      {/* ══ SCROLLING FILM BACKGROUND ══ */}
+      {/* ══ BACKGROUND — single movie poster left side ══ */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0, overflow: "hidden", pointerEvents: "none" }}>
-        {/* Row 1 */}
-        <div style={{ position: "absolute", top: "5%", left: 0, display: "flex", gap: 16, opacity: 0.18 }} className="film-strip">
-          {[...POSTER_FILMS, ...POSTER_FILMS].map((f, i) => <PosterTile key={i} film={f} idx={i} />)}
+        {/* Single large poster on the left */}
+        <div style={{
+          position: "absolute", left: 0, top: 0, bottom: 0,
+          width: "38vw", maxWidth: 560,
+          background: `linear-gradient(160deg, ${POSTER_COLORS[Math.abs(movie.charCodeAt(0) || 0) % POSTER_COLORS.length][0]} 0%, ${POSTER_COLORS[Math.abs(movie.charCodeAt(0) || 0) % POSTER_COLORS.length][1]} 100%)`,
+          transition: "background 1.2s ease",
+        }}>
+          {/* Film grain */}
+          <div style={{ position: "absolute", inset: 0, backgroundImage: "url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E")", opacity: 0.6 }} />
+          {/* Vertical lines like a film strip */}
+          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 28, display: "flex", flexDirection: "column", justifyContent: "space-evenly", padding: "20px 6px", background: "rgba(0,0,0,0.5)" }}>
+            {Array.from({length: 18}).map((_,i) => (
+              <div key={i} style={{ width: 16, height: 12, borderRadius: 2, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.08)" }} />
+            ))}
+          </div>
+          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 28, display: "flex", flexDirection: "column", justifyContent: "space-evenly", padding: "20px 6px", background: "rgba(0,0,0,0.5)" }}>
+            {Array.from({length: 18}).map((_,i) => (
+              <div key={i} style={{ width: 16, height: 12, borderRadius: 2, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.08)" }} />
+            ))}
+          </div>
+          {/* Movie title on poster */}
+          <div style={{ position: "absolute", bottom: 0, left: 28, right: 28, padding: "60px 28px 40px", background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, transparent 100%)" }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: acc, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 10, opacity: 0.8 }}>Now Watching</p>
+            <h3 style={{ fontFamily: "var(--fp)", fontSize: "clamp(20px,2.5vw,32px)", fontWeight: 900, color: "#fff", lineHeight: 1.1, letterSpacing: "-0.01em" }}>{movie || "Choose a film"}</h3>
+            <div style={{ width: 40, height: 2, background: acc, borderRadius: 2, marginTop: 14, boxShadow: `0 0 12px ${glow}` }} />
+          </div>
+          {/* Accent glow on right edge of poster */}
+          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 120, background: `linear-gradient(to right, transparent, ${theme.bg1})` }} />
         </div>
-        {/* Row 2 — reverse direction */}
-        <div style={{ position: "absolute", top: "36%", left: 0, display: "flex", gap: 16, opacity: 0.13, animation: "scroll-bg 55s linear infinite reverse" }}>
-          {[...POSTER_FILMS, ...POSTER_FILMS].map((f, i) => <PosterTile key={i} film={f} idx={i + 5} />)}
-        </div>
-        {/* Row 3 */}
-        <div style={{ position: "absolute", top: "65%", left: 0, display: "flex", gap: 16, opacity: 0.1, animation: "scroll-bg 70s linear infinite" }}>
-          {[...POSTER_FILMS, ...POSTER_FILMS].map((f, i) => <PosterTile key={i} film={f} idx={i + 10} />)}
-        </div>
-        {/* Dark overlay to keep content readable */}
-        <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, ${theme.bg1}CC 0%, ${theme.bg1}99 40%, ${theme.bg1}99 60%, ${theme.bg1}CC 100%)` }} />
-        {/* Radial accent glow */}
-        <div style={{ position: "absolute", top: "-10%", left: "50%", transform: "translateX(-50%)", width: 900, height: 600, borderRadius: "50%", background: `radial-gradient(ellipse, ${glow.replace("0.2","0.12")} 0%, transparent 65%)` }} />
-        {/* Vignette */}
-        <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at center, transparent 35%, ${theme.bg1}BB 100%)` }} />
+        {/* Fade poster into main bg */}
+        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "45vw", background: `linear-gradient(to right, transparent 65%, ${theme.bg1} 100%)` }} />
+        {/* Subtle top/bottom vignette */}
+        <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, ${theme.bg1}99 0%, transparent 15%, transparent 85%, ${theme.bg1}99 100%)` }} />
       </div>
 
       {/* ══ NAVBAR ══ */}
