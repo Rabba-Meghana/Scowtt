@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { signOut } from "next-auth/react";
-import Image from "next/image";
 import {
   updateMovie,
   getFact,
@@ -160,15 +159,29 @@ export default function DashboardClient({ user }: { user: User }) {
           zIndex:        10,
         }}
       >
+        {/* Logo — click to go to dashboard */}
+        <a href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", marginRight: 4 }}>
+          <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="13" stroke="var(--gold-accent)" strokeWidth="1.5"/>
+            <circle cx="16" cy="16" r="2" fill="var(--gold-accent)"/>
+            <circle cx="16" cy="7" r="2.5" fill="var(--gold-accent)" opacity="0.6"/>
+            <circle cx="16" cy="25" r="2.5" fill="var(--gold-accent)" opacity="0.6"/>
+            <circle cx="7" cy="16" r="2.5" fill="var(--gold-accent)" opacity="0.6"/>
+            <circle cx="25" cy="16" r="2.5" fill="var(--gold-accent)" opacity="0.6"/>
+          </svg>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--gold-accent)", fontFamily: "var(--font-playfair)" }}>Movie Memory</span>
+        </a>
+
         {/* Avatar */}
         <div className="avatar" style={{ width: 34, height: 34 }}>
           {user.image ? (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={user.image}
               alt={user.name ?? "Profile"}
               width={34}
               height={34}
-              style={{ borderRadius: "50%", objectFit: "cover" }}
+              style={{ borderRadius: "50%", objectFit: "cover", width: 34, height: 34 }}
             />
           ) : (
             <span style={{ fontSize: 12 }}>{initials}</span>
