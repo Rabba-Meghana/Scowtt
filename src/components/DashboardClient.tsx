@@ -14,6 +14,7 @@ export default function DashboardClient({ user }: { user: User }) {
   const [fact, setFact]               = useState<FactResponse | null>(null);
   const [factLoading, setFactLoading] = useState(true);
   const [factError, setFactError]     = useState<string | null>(null);
+  const [factHistory, setFactHistory] = useState<FactResponse[]>([]);
   const [dark, setDark]               = useState(false);
   const [mounted, setMounted]         = useState(false);
   const editRef = useRef<HTMLInputElement>(null);
@@ -41,7 +42,7 @@ export default function DashboardClient({ user }: { user: User }) {
     }
     setFactLoading(true); setFactError(null);
     const r = await getFact();
-    if (r.ok) { setCachedFact(movie, r.data); setFact(r.data); }
+    if (r.ok) { setCachedFact(movie, r.data); setFact(r.data); setFactHistory(h => [r.data, ...h.filter(f => f.generatedAt !== r.data.generatedAt)].slice(0, 5)); }
     else setFactError(r.error.message);
     setFactLoading(false);
   }, [movie]);
@@ -162,7 +163,7 @@ export default function DashboardClient({ user }: { user: User }) {
           <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: BG3, border: `1.5px solid ${BDS}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: G, flexShrink: 0 }}>
             {user.image
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={user.image} alt="av" referrerPolicy="no-referrer" style={{ width: 32, height: 32, objectFit: "cover" }} />
+              ? <img src={user.image + "?sz=64"} alt="av" referrerPolicy="no-referrer" style={{ width: 32, height: 32, objectFit: "cover", display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
               : initials}
           </div>
           <span style={{ fontSize: 13, fontWeight: 500, color: T, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name ?? user.email}</span>
@@ -193,7 +194,7 @@ export default function DashboardClient({ user }: { user: User }) {
             <div style={{ width: 90, height: 90, borderRadius: "50%", overflow: "hidden", background: BG3, border: `3px solid ${BDS}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, fontWeight: 800, color: G, boxShadow: `0 0 0 5px ${dark ? "rgba(200,146,10,0.1)" : "rgba(200,146,10,0.08)"}` }}>
               {user.image
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={user.image} alt="profile" referrerPolicy="no-referrer" style={{ width: 90, height: 90, objectFit: "cover" }} />
+                ? <img src={user.image + "?sz=180"} alt="profile" referrerPolicy="no-referrer" style={{ width: 90, height: 90, objectFit: "cover", display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
                 : initials}
             </div>
           </div>
@@ -213,7 +214,7 @@ export default function DashboardClient({ user }: { user: User }) {
       {/* ══════════════════════════════════════════════
           MAIN CONTENT
       ══════════════════════════════════════════════ */}
-      <main style={{ flex: 1, maxWidth: 960, width: "100%", margin: "0 auto", padding: "clamp(1.5rem,4vw,2.5rem) clamp(1rem,4vw,1.5rem)", display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: "1.5rem", alignItems: "start", position: "relative", zIndex: 1 }}>
+      <main style={{ flex: 1, maxWidth: 960, width: "100%", margin: "0 auto", padding: "clamp(1.5rem,4vw,2.5rem) clamp(1rem,4vw,1.5rem)", display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: "1.5rem", alignItems: "stretch", position: "relative", zIndex: 1 }}>
 
         {/* ── LEFT COLUMN ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -327,7 +328,7 @@ export default function DashboardClient({ user }: { user: User }) {
               <div style={{ width: 64, height: 64, borderRadius: "50%", overflow: "hidden", background: BG3, border: `2px solid ${BDS}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, color: G, margin: "0 auto 12px", boxShadow: `0 4px 16px rgba(200,146,10,0.2)` }}>
                 {user.image
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={user.image} alt="profile" referrerPolicy="no-referrer" style={{ width: 64, height: 64, objectFit: "cover" }} />
+                  ? <img src={user.image + "?sz=128"} alt="profile" referrerPolicy="no-referrer" crossOrigin="anonymous" style={{ width: 64, height: 64, objectFit: "cover", display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
                   : initials}
               </div>
               <p style={{ fontFamily: FP, fontSize: 17, fontWeight: 700, color: T, marginBottom: 3 }}>{user.name ?? "—"}</p>
@@ -374,6 +375,61 @@ export default function DashboardClient({ user }: { user: User }) {
           </div>
         </div>
       </main>
+
+      {/* ══════════════════════════════════════════════
+          FULL-WIDTH BOTTOM SECTIONS
+      ══════════════════════════════════════════════ */}
+      <div style={{ maxWidth: 960, width: "100%", margin: "0 auto", padding: "0 clamp(1rem,4vw,1.5rem) clamp(2rem,4vw,3rem)", display: "flex", flexDirection: "column", gap: "1.5rem", position: "relative", zIndex: 1 }}>
+
+        {/* HOW IT WORKS */}
+        <div style={{ ...glassCard, padding: "clamp(1.25rem,3vw,2rem)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: dark ? "rgba(200,146,10,0.15)" : "rgba(200,146,10,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke={G} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, color: G, letterSpacing: "0.1em", textTransform: "uppercase" }}>How it works</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
+            {[
+              { step: "01", title: "Sign in with Google", desc: "Your identity is securely authenticated via Google OAuth. We only store your name, email, and photo.", icon: "🔐" },
+              { step: "02", title: "Save your movie", desc: "Tell us your all-time favourite film. You can edit it anytime — your fact cache updates automatically.", icon: "🎬" },
+              { step: "03", title: "Get AI facts", desc: "OpenAI GPT-4o mini generates fascinating facts about your movie. Results are cached for 30 seconds.", icon: "✨" },
+            ].map(s => (
+              <div key={s.step} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 26 }}>{s.icon}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: G, opacity: 0.6, letterSpacing: "0.1em" }}>{s.step}</span>
+                </div>
+                <h3 style={{ fontFamily: FP, fontSize: 17, fontWeight: 700, color: T, lineHeight: 1.2 }}>{s.title}</h3>
+                <p style={{ fontSize: 13, color: T3, lineHeight: 1.7 }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FACT HISTORY — only show when we have history */}
+        {factHistory.length > 1 && (
+          <div style={{ ...glassCard, padding: "clamp(1.25rem,3vw,2rem)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: dark ? "rgba(200,146,10,0.15)" : "rgba(200,146,10,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={G} strokeWidth="2"/><path d="M12 6v6l4 2" stroke={G} strokeWidth="2" strokeLinecap="round"/></svg>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: G, letterSpacing: "0.1em", textTransform: "uppercase" }}>Fact history this session</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {factHistory.slice(1).map((f, i) => (
+                <div key={i} style={{ display: "flex", gap: 14, padding: "14px 16px", borderRadius: 12, background: dark ? "rgba(200,146,10,0.04)" : "rgba(200,146,10,0.03)", border: `1px solid ${BD}` }}>
+                  <div style={{ width: 3, borderRadius: 3, background: G, opacity: 0.4, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 14, color: T, lineHeight: 1.7 }}>{f.factText}</p>
+                    <p style={{ fontSize: 11, color: T3, marginTop: 6 }}>{timeAgo(f.generatedAt)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* ══════════════════════════════════════════════
           FOOTER
