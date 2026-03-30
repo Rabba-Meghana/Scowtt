@@ -101,6 +101,9 @@ export default function DashboardClient({ user }: { user: User }) {
 
   if (!mounted) return null;
 
+  // Proxy Google photo through our server to guarantee it loads
+  const avatarSrc = user.image ? `/api/avatar?url=${encodeURIComponent(user.image)}` : null;
+
   const acc = theme.accent;
   const gl  = theme.glow;
   const bd  = theme.border;
@@ -224,7 +227,7 @@ export default function DashboardClient({ user }: { user: User }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 12px 4px 5px", borderRadius: 50, background: gl, border: `1px solid ${acc}33` }}>
             <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", background: theme.bg2, border: `1.5px solid ${acc}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: acc, flexShrink: 0 }}>
               {user.image
-                ? <img src={user.image} alt="av" referrerPolicy="no-referrer" width={28} height={28} style={{ width: 28, height: 28, objectFit: "cover", display: "block" }} />
+                ? <img src={avatarSrc ?? ""} alt="av" referrerPolicy="no-referrer" width={28} height={28} style={{ width: 28, height: 28, objectFit: "cover", display: "block" }} />
                 : (user.name?.[0]?.toUpperCase() ?? "?")}
             </div>
             <span style={{ fontSize: 12, fontWeight: 500, color: tx }}>{firstName}</span>
@@ -263,7 +266,7 @@ export default function DashboardClient({ user }: { user: User }) {
                 <div className="fade-up-2" style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, maxWidth: 180 }}>
                   <div style={{ width: 64, height: 64, borderRadius: 14, overflow: "hidden", border: `2px solid ${acc}44`, boxShadow: `0 0 24px ${gl}`, background: theme.bg2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: acc, flexShrink: 0 }}>
                     {user.image
-                      ? <img src={user.image} alt="profile" referrerPolicy="no-referrer" style={{ width: 64, height: 64, objectFit: "cover", display: "block" }} />
+                      ? <img src={avatarSrc ?? ""} alt="profile" referrerPolicy="no-referrer" style={{ width: 64, height: 64, objectFit: "cover", display: "block" }} />
                       : (user.name?.[0] ?? "?")}
                   </div>
                   <div style={{ textAlign: "right", minWidth: 0, width: "100%" }}>
