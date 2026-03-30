@@ -9,49 +9,34 @@ export default async function LandingPage() {
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { onboarded: true } });
     redirect(user?.onboarded ? "/dashboard" : "/onboarding");
   }
-
   return (
-    <main style={{ minHeight: "100vh", background: "var(--cream)", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", fontFamily: "var(--font-dm-sans)", position: "relative", overflow: "hidden" }}>
-      {/* Background orbs */}
-      <div style={{ position: "absolute", top: "-20%", right: "-10%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(200,146,10,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", bottom: "-20%", left: "-10%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(200,146,10,0.05) 0%, transparent 70%)", pointerEvents: "none" }} />
-
-      <div className="fade-up" style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
-        {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 72, height: 72, borderRadius: 20, background: "var(--cream-2)", border: "1px solid var(--border)", marginBottom: 20, boxShadow: "var(--shadow)" }}>
-            <svg width="38" height="38" viewBox="0 0 40 40" fill="none">
-              <circle cx="20" cy="20" r="17" stroke="var(--gold)" strokeWidth="1.5"/>
-              <circle cx="20" cy="20" r="5" fill="var(--gold)" opacity="0.15"/>
-              <circle cx="20" cy="20" r="2.5" fill="var(--gold)"/>
-              <circle cx="20" cy="8"  r="2.8" fill="var(--gold)" opacity="0.6"/>
-              <circle cx="20" cy="32" r="2.8" fill="var(--gold)" opacity="0.6"/>
-              <circle cx="8"  cy="20" r="2.8" fill="var(--gold)" opacity="0.6"/>
-              <circle cx="32" cy="20" r="2.8" fill="var(--gold)" opacity="0.6"/>
-              <circle cx="11.5" cy="11.5" r="2.2" fill="var(--gold)" opacity="0.35"/>
-              <circle cx="28.5" cy="11.5" r="2.2" fill="var(--gold)" opacity="0.35"/>
-              <circle cx="11.5" cy="28.5" r="2.2" fill="var(--gold)" opacity="0.35"/>
-              <circle cx="28.5" cy="28.5" r="2.2" fill="var(--gold)" opacity="0.35"/>
-            </svg>
-          </div>
-          <h1 style={{ fontFamily: "var(--font-playfair)", fontSize: 36, fontWeight: 700, color: "var(--text)", lineHeight: 1.1, marginBottom: 10 }}>Movie Memory</h1>
-          <p style={{ fontSize: 15, color: "var(--text-3)", lineHeight: 1.6 }}>Your personal cinema companion.<br/>Discover facts about films you love.</p>
+    <main style={{ minHeight: "100vh", background: "var(--black)", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", position: "relative", overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: "-20%", left: "50%", transform: "translateX(-50%)", width: 800, height: 800, borderRadius: "50%", background: "radial-gradient(circle, rgba(200,146,10,0.08) 0%, transparent 65%)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(200,146,10,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(200,146,10,0.03) 1px, transparent 1px)", backgroundSize: "60px 60px", pointerEvents: "none" }} />
+      <div className="fade-up" style={{ width: "100%", maxWidth: 440, position: "relative", zIndex: 1, textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 80, height: 80, borderRadius: 22, background: "rgba(200,146,10,0.1)", border: "1px solid rgba(200,146,10,0.3)", marginBottom: 24, boxShadow: "0 0 40px rgba(200,146,10,0.15)" }} className="float">
+          <svg width="44" height="44" viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="16" stroke="var(--gold)" strokeWidth="1.5"/>
+            <circle cx="20" cy="20" r="4" fill="var(--gold)" opacity="0.2"/>
+            <circle cx="20" cy="20" r="2" fill="var(--gold)"/>
+            <circle cx="20" cy="9"  r="2.5" fill="var(--gold)" opacity="0.65"/>
+            <circle cx="20" cy="31" r="2.5" fill="var(--gold)" opacity="0.65"/>
+            <circle cx="9"  cy="20" r="2.5" fill="var(--gold)" opacity="0.65"/>
+            <circle cx="31" cy="20" r="2.5" fill="var(--gold)" opacity="0.65"/>
+            <circle cx="12" cy="12" r="2" fill="var(--gold)" opacity="0.35"/>
+            <circle cx="28" cy="12" r="2" fill="var(--gold)" opacity="0.35"/>
+            <circle cx="12" cy="28" r="2" fill="var(--gold)" opacity="0.35"/>
+            <circle cx="28" cy="28" r="2" fill="var(--gold)" opacity="0.35"/>
+          </svg>
         </div>
-
-        {/* Card */}
+        <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-3)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 16 }}>✦ Your personal cinema ✦</p>
+        <h1 style={{ fontFamily: "var(--fp)", fontSize: "clamp(42px,8vw,64px)", fontWeight: 900, lineHeight: 1.0, marginBottom: 16, letterSpacing: "-0.02em" }} className="gold-shimmer">Movie Memory</h1>
+        <p style={{ fontSize: 15, color: "var(--text-3)", lineHeight: 1.7, marginBottom: 40, maxWidth: 360, margin: "0 auto 40px" }}>Your personal cinema companion. Discover fascinating AI-powered facts about the films you love.</p>
         <div className="glass" style={{ padding: "2rem" }}>
-          <p style={{ fontSize: 13, color: "var(--text-3)", textAlign: "center", marginBottom: 20, lineHeight: 1.6 }}>
-            Sign in to save your favourite movie and get AI-powered facts instantly.
-          </p>
           <SignInButton />
-          <p style={{ fontSize: 11, color: "var(--text-3)", textAlign: "center", marginTop: 16, opacity: 0.7 }}>
-            We only access your name, email and profile photo.
-          </p>
+          <p style={{ fontSize: 11, color: "var(--text-3)", marginTop: 16, opacity: 0.6 }}>We only access your name, email and profile photo.</p>
         </div>
-
-        <p style={{ textAlign: "center", marginTop: 24, fontSize: 12, color: "var(--text-3)", opacity: 0.5 }}>
-          Powered by OpenAI · Next.js · Postgres
-        </p>
+        <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 24, opacity: 0.4 }}>Next.js · Prisma · PostgreSQL · OpenAI</p>
       </div>
     </main>
   );
