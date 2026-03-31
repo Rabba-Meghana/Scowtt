@@ -374,7 +374,7 @@ export default function DashboardClient({ user }: DashboardProps) {
 
         {/* POSTER — full image, fade right into content */}
         <div style={{
-          width: "min(28vw, 320px)", flexShrink: 0, position: "relative",
+          width: "min(32vw, 380px)", flexShrink: 0, position: "relative",
           minHeight: "calc(100vh - 60px)", background: palette.dark,
         }}>
           {posterUrl ? (
@@ -399,21 +399,21 @@ export default function DashboardClient({ user }: DashboardProps) {
               {/* Bottom gradient — movie title legible */}
               <div style={{
                 position: "absolute", bottom: 0, left: 0, right: 0,
-                height: "45%",
-                background: `linear-gradient(to top, ${palette.dark} 30%, transparent 100%)`,
+                height: "30%",
+                background: `linear-gradient(to top, ${palette.dark} 20%, transparent 100%)`,
                 pointerEvents: "none",
               }} />
-              {/* Right fade — blends seamlessly into main content */}
+              {/* Right fade — only last 25% fades, rest fully visible */}
               <div style={{
                 position: "absolute", top: 0, right: 0, bottom: 0,
-                width: "55%",
+                width: "28%",
                 background: `linear-gradient(to right, transparent 0%, ${palette.dark} 100%)`,
                 pointerEvents: "none",
               }} />
               {/* Top fade */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0,
-                height: "15%",
+                height: "8%",
                 background: `linear-gradient(to bottom, ${palette.dark} 0%, transparent 100%)`,
                 pointerEvents: "none",
               }} />
