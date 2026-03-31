@@ -340,7 +340,7 @@ export default function DashboardClient({ user }: DashboardProps) {
   );
 
   if (tab === "api") return (
-    <div style={{ minHeight: "100vh", backgroundColor: palette.dark, background: `radial-gradient(ellipse at 20% 0%, ${palette.mid}BB 0%, ${palette.dark} 55%)`, fontFamily: "var(--ff, 'DM Sans', system-ui, sans-serif)", color: "#E8E0D0", transition: "all 1.2s ease" }}>
+    <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse at 20% 0%, ${palette.mid}BB 0%, ${palette.dark} 55%)`, fontFamily: "var(--ff, 'DM Sans', system-ui, sans-serif)", color: "#E8E0D0", transition: "all 1.2s ease" }}>
       <style>{`@keyframes pulse{0%,100%{opacity:.3}50%{opacity:.7}}`}</style>
       <Nav />
       <div style={{ padding: "2.5rem", maxWidth: 860 }}>
@@ -373,7 +373,7 @@ export default function DashboardClient({ user }: DashboardProps) {
 
   return (
     <div style={{
-      minHeight: "100vh", backgroundColor: palette.dark,
+      minHeight: "100vh", background: palette.dark,
       display: "flex", flexDirection: "column", position: "relative",
       fontFamily: "var(--ff, 'DM Sans', system-ui, sans-serif)", color: "#E8E0D0",
     }}>
