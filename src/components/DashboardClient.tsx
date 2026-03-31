@@ -82,7 +82,6 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
   const [posterUrl, setPosterUrl] = useState<string | null>(null);
   const [palette,   setPalette]   = useState<Palette>(DEFAULT_PALETTE);
 
-  // Track if palette has been set for current movie
   const paletteLockRef = useRef<string>("");
   const A  = palette.accent;
   const AM = A + "22";
@@ -92,12 +91,9 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
     if (!movie) return;
     let cancelled = false;
     
-    // Reset poster URL
     setPosterUrl(null);
     
-    // Reset palette lock when movie changes
     if (paletteLockRef.current !== movie) {
-      // Don't reset palette state, just clear the lock so new one can load
       paletteLockRef.current = "";
     }
     
@@ -111,7 +107,6 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
         console.log(`[client] Got poster URL: ${data.posterUrl}`);
         setPosterUrl(data.posterUrl);
         
-        // Only fetch palette if we haven't already set it for this movie
         if (paletteLockRef.current !== movie) {
           const p = await fetchPalette(data.posterUrl);
           if (!cancelled && p.accent !== DEFAULT_PALETTE.accent) {
@@ -124,6 +119,24 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
         console.error("[client] Error:", err);
       }
     })();
+    return () => { cancelled = true; };
+  }, [movie]);
+
+  // Generate new fact when movie changes
+  useEffect(() => {
+    if (!movie) return;
+    let cancelled = false;
+    
+    async function generateFactForNewMovie() {
+      setFactLoading(true);
+      const result = await apiGetFact();
+      if (!cancelled && result.ok && result.data) {
+        setFactHistory(prev => [{ text: result.data.factText, movie, time: new Date() }, ...prev]);
+      }
+      if (!cancelled) setFactLoading(false);
+    }
+    
+    generateFactForNewMovie();
     return () => { cancelled = true; };
   }, [movie]);
 
@@ -160,7 +173,6 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
     const prev = movie;
     setMovie(trimmed); 
     setEditing(false);
-    // Reset palette lock so new movie loads new palette
     paletteLockRef.current = "";
     invalidateFactCache();
     const result = await apiUpdateMovie(trimmed);
@@ -172,7 +184,6 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
     setSaving(false);
   }, [editMovie, movie]);
 
-  // Generate new fact - NO CACHING
   const generateFact = useCallback(async () => {
     setFactLoading(true);
     const result = await apiGetFact();
