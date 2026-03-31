@@ -7,6 +7,7 @@ import {
   getFact as apiGetFact,
   invalidateFactCache,
 } from "@/lib/api";
+import { getMovieTheme } from "@/lib/movieThemes";
 
 interface DashboardProps {
   user: {
@@ -19,8 +20,8 @@ interface DashboardProps {
   initialFact: string | null;
 }
 
-interface Palette { dark: string; mid: string; accent: string; }
-const DEFAULT_PALETTE: Palette = { dark: "#06060A", mid: "#12121E", accent: "#C9A84C" };
+interface Palette { dark: string; mid: string; accent: string; label?: string; }
+const DEFAULT_PALETTE: Palette = { dark: "#06060A", mid: "#12121E", accent: "#C9A84C", label: "Cinema" };
 
 async function fetchPalette(posterUrl: string): Promise<Palette> {
   try {
@@ -107,6 +108,7 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
         if (cancelled || !data.posterUrl) return;
         console.log(`[client] Got poster URL: ${data.posterUrl}`);
         setPosterUrl(data.posterUrl);
+        const themeLabel = getMovieTheme(movie).label;
         
         if (paletteLockRef.current !== movie) {
           const p = await fetchPalette(data.posterUrl);
@@ -231,7 +233,7 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
         Movie Memory
       </a>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        {(["dashboard", "api"] as const).map(t => (
+        {(["dashboard", "api", "poster"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: "5px 14px", borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: "pointer",
             border: tab === t ? `1px solid ${A}55` : "1px solid rgba(255,255,255,0.07)",
@@ -250,6 +252,78 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
         </div>
       </div>
     </nav>
+  );
+
+  if (tab === "poster") return (
+    <div style={{
+      minHeight: "100vh",
+      background: palette.dark,
+      fontFamily: "var(--ff, 'DM Sans', system-ui, sans-serif)",
+      color: "#E8E0D0",
+      display: "flex", flexDirection: "column",
+      transition: "background 1.2s ease",
+    }}>
+      <Nav />
+      <div style={{ flex: 1, display: "flex", alignItems: "stretch" }}>
+        {posterUrl ? (
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2.5rem", position: "relative", overflow: "hidden" }}>
+            {/* Blurred background */}
+            <div style={{
+              position: "absolute", inset: 0,
+              backgroundImage: `url(${posterUrl})`,
+              backgroundSize: "cover", backgroundPosition: "center",
+              filter: "blur(40px) brightness(0.25) saturate(1.5)",
+              transform: "scale(1.1)",
+            }} />
+            {/* Full poster — contained, no crop */}
+            <div style={{ position: "relative", zIndex: 1, display: "flex", gap: "3rem", alignItems: "flex-start", maxWidth: 900, width: "100%" }}>
+              <img
+                src={posterUrl}
+                alt={movie}
+                style={{
+                  height: "min(75vh, 600px)",
+                  width: "auto",
+                  borderRadius: 16,
+                  boxShadow: `0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px ${A}22`,
+                  flexShrink: 0,
+                  display: "block",
+                  objectFit: "contain",
+                }}
+              />
+              {/* Info panel beside poster */}
+              <div style={{ flex: 1, paddingTop: "1rem" }}>
+                <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: A, fontWeight: 700, marginBottom: 14, opacity: 0.7 }}>Now Watching</p>
+                <h2 style={{ fontFamily: "var(--fp, 'Playfair Display', serif)", fontSize: "clamp(28px,4vw,52px)", fontWeight: 900, color: "#fff", lineHeight: 1.05, letterSpacing: "-0.02em", marginBottom: 20, textTransform: "uppercase" }}>{movie}</h2>
+                <div style={{ width: 40, height: 2, background: A, borderRadius: 2, marginBottom: 24, boxShadow: `0 0 12px ${A}88` }} />
+                <p style={{ fontSize: 13, color: "#9A9080", lineHeight: 1.7, marginBottom: 28, fontWeight: 300 }}>
+                  Theme detected: <span style={{ color: A, fontWeight: 600 }}>{palette.label || "Cinema"}</span>
+                  <br />All UI colors are derived algorithmically from this poster.
+                </p>
+                <button onClick={() => setTab("dashboard")} style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "10px 22px", borderRadius: 10, cursor: "pointer",
+                  background: A, border: "none", color: palette.dark,
+                  fontSize: 14, fontWeight: 700, fontFamily: "inherit",
+                  boxShadow: `0 4px 20px ${A}44`,
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M19 12H5M12 5l-7 7 7 7"/>
+                  </svg>
+                  Back to dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20 }}>
+            <p style={{ fontSize: 14, color: "#7A7060" }}>No poster available for this film.</p>
+            <button onClick={() => setTab("dashboard")} style={{ padding: "8px 20px", borderRadius: 8, background: A, border: "none", color: palette.dark, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+              Back to dashboard
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 
   if (tab === "api") return (
@@ -304,7 +378,7 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
         {/* POSTER */}
         <div style={{ width: "min(30vw, 340px)", flexShrink: 0, position: "relative", overflow: "hidden", minHeight: "calc(100vh - 60px)" }}>
           {posterUrl ? (
-            <img src={posterUrl} alt={movie} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", opacity: 0.85 }} />
+            <img src={posterUrl} alt={movie} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", opacity: 0.9, cursor: "pointer" }} onClick={() => setTab("poster")} title="Click to view full poster" />
           ) : (
             <div style={{ position: "absolute", inset: 0, background: `linear-gradient(160deg, ${A}18 0%, ${palette.dark} 70%)` }} />
           )}
