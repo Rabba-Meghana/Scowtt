@@ -122,29 +122,8 @@ export default function DashboardClient({ user }: DashboardProps) {
     return () => { cancelled = true; };
   }, [movie]);
 
-  // Generate new fact when movie changes
+  // Load fact on mount only
   useEffect(() => {
-    if (!movie) return;
-    let cancelled = false;
-    
-    async function generateFactForNewMovie() {
-      setFactLoading(true);
-      const result = await apiGetFact();
-      if (!cancelled && result.ok && result.data) {
-        setFactHistory(prev => [{ text: result.data.factText, movie, time: new Date() }, ...prev]);
-      }
-      if (!cancelled) setFactLoading(false);
-    }
-    
-    generateFactForNewMovie();
-    return () => { cancelled = true; };
-  }, [movie]);
-
-  // Auto-generate fact on first load
-  const didInit = useRef(false);
-  useEffect(() => {
-    if (didInit.current) { didInit.current = true; return; }
-    didInit.current = true;
     if (!movie) return;
     let cancelled = false;
     setFactLoading(true);
@@ -180,6 +159,15 @@ export default function DashboardClient({ user }: DashboardProps) {
       setMovie(prev); 
       setEditing(true); 
       setEditError(result.error?.message ?? "Failed to save"); 
+    } else {
+      // Auto-generate a new fact for the new movie
+      setFactLoading(true);
+      setFactHistory([]);
+      const factResult = await apiGetFact();
+      if (factResult.ok && factResult.data) {
+        setFactHistory([{ text: factResult.data.factText, movie: trimmed, time: new Date() }]);
+      }
+      setFactLoading(false);
     }
     setSaving(false);
   }, [editMovie, movie]);
