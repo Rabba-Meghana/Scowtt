@@ -2,6 +2,8 @@
 
 A full-stack web application where you save your favourite film and get AI-powered facts about it. The entire UI theme adapts dynamically to your movie's genre, pulling colors directly from the real TMDB poster.
 
+Video: https://drive.google.com/file/d/1z6f2XgxUrVHxlt-ho6S1FNyMxUcpQ9lO/view?usp=sharing
+
 **Stack:** Next.js 15, TypeScript, Prisma, PostgreSQL, Google OAuth, OpenAI GPT-4o mini, TailwindCSS, TMDB API
 
 ---
