@@ -358,16 +358,49 @@ export default function DashboardClient({ user }: DashboardProps) {
   return (
     <div style={{
       minHeight: "100vh", backgroundColor: palette.dark,
-      background: `radial-gradient(ellipse at 20% 0%, ${palette.mid}BB 0%, ${palette.dark} 55%)`,
-      display: "flex", flexDirection: "column",
+      display: "flex", flexDirection: "column", position: "relative",
       fontFamily: "var(--ff, 'DM Sans', system-ui, sans-serif)", color: "#E8E0D0",
-      transition: "background 1.2s ease, background-color 1.2s ease",
     }}>
       <style>{`
         @keyframes pulse  { 0%,100%{opacity:.3} 50%{opacity:.7} }
         @keyframes spin   { to{transform:rotate(360deg)} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
+
+      {/* FULL-SCREEN BLURRED POSTER BACKGROUND */}
+      {posterUrl && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 0, overflow: "hidden", pointerEvents: "none",
+        }}>
+          <img
+            src={posterUrl}
+            alt=""
+            style={{
+              position: "absolute", inset: 0,
+              width: "100%", height: "100%",
+              objectFit: "cover", objectPosition: "center top",
+              filter: "blur(60px) brightness(0.18) saturate(1.8)",
+              transform: "scale(1.08)",
+              transition: "opacity 1s ease",
+            }}
+          />
+          {/* Dark overlay so content stays readable */}
+          <div style={{
+            position: "absolute", inset: 0,
+            background: `linear-gradient(135deg, ${palette.dark}CC 0%, ${palette.dark}88 50%, ${palette.dark}BB 100%)`,
+          }} />
+        </div>
+      )}
+      {/* Fallback radial gradient when no poster */}
+      {!posterUrl && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+          background: `radial-gradient(ellipse at 20% 0%, ${palette.mid}BB 0%, ${palette.dark} 55%)`,
+          transition: "background 1.2s ease",
+        }} />
+      )}
+
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1 }}>
       <Nav />
 
       <div style={{ display: "flex", flex: 1, alignItems: "stretch" }}>
@@ -613,6 +646,7 @@ export default function DashboardClient({ user }: DashboardProps) {
           All systems operational
         </div>
       </footer>
+      </div>
     </div>
   );
 }
