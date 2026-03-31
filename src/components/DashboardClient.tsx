@@ -122,16 +122,37 @@ export default function DashboardClient({ user }: DashboardProps) {
     return () => { cancelled = true; };
   }, [movie]);
 
-  // Load fact on mount only
+  // Load current fact + history from DB on mount
   useEffect(() => {
     if (!movie) return;
     let cancelled = false;
     setFactLoading(true);
-    apiGetFact().then(result => {
-      if (!cancelled && result.ok && result.data) {
-        setFactHistory([{ text: result.data.factText, movie, time: new Date() }]);
+
+    // Load history from DB in parallel with current fact
+    Promise.all([
+      apiGetFact(),
+      fetch("/api/facts").then(r => r.ok ? r.json() : { facts: [] }).catch(() => ({ facts: [] })),
+    ]).then(([factResult, historyData]) => {
+      if (cancelled) return;
+      const dbFacts = (historyData.facts ?? []).map((f: { factText: string; generatedAt: string; movie: string }) => ({
+        text: f.factText,
+        movie: f.movie,
+        time: new Date(f.generatedAt),
+      }));
+      if (factResult.ok && factResult.data) {
+        const latest = { text: factResult.data.factText, movie, time: new Date(factResult.data.generatedAt) };
+        // Merge latest with DB history, deduplicate
+        const seen = new Set<string>();
+        const merged = [latest, ...dbFacts].filter(f => {
+          if (seen.has(f.text)) return false;
+          seen.add(f.text);
+          return true;
+        }).slice(0, 8);
+        setFactHistory(merged);
+      } else {
+        setFactHistory(dbFacts.slice(0, 8));
       }
-      if (!cancelled) setFactLoading(false);
+      setFactLoading(false);
     });
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,12 +181,23 @@ export default function DashboardClient({ user }: DashboardProps) {
       setEditing(true); 
       setEditError(result.error?.message ?? "Failed to save"); 
     } else {
-      // Auto-generate a new fact for the new movie
+      // Auto-generate a new fact for the new movie + load its history
       setFactLoading(true);
       setFactHistory([]);
-      const factResult = await apiGetFact();
+      const [factResult, historyData] = await Promise.all([
+        apiGetFact(),
+        fetch("/api/facts").then(r => r.ok ? r.json() : { facts: [] }).catch(() => ({ facts: [] })),
+      ]);
+      const dbFacts = (historyData.facts ?? []).map((f: { factText: string; generatedAt: string; movie: string }) => ({
+        text: f.factText, movie: f.movie, time: new Date(f.generatedAt),
+      }));
       if (factResult.ok && factResult.data) {
-        setFactHistory([{ text: factResult.data.factText, movie: trimmed, time: new Date() }]);
+        const latest = { text: factResult.data.factText, movie: trimmed, time: new Date(factResult.data.generatedAt) };
+        const seen = new Set<string>();
+        const merged = [latest, ...dbFacts].filter(f => { if (seen.has(f.text)) return false; seen.add(f.text); return true; }).slice(0, 8);
+        setFactHistory(merged);
+      } else {
+        setFactHistory(dbFacts.slice(0, 8));
       }
       setFactLoading(false);
     }
