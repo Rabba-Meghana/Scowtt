@@ -370,47 +370,61 @@ export default function DashboardClient({ user }: DashboardProps) {
       `}</style>
       <Nav />
 
-      <div style={{ display: "flex", flex: 1 }}>
+      <div style={{ display: "flex", flex: 1, alignItems: "stretch" }}>
 
-        {/* POSTER CARD — full image, no crop, no fade */}
+        {/* POSTER — fixed left column, full height, centered card */}
         <div style={{
-          width: 220, flexShrink: 0,
+          width: 260, flexShrink: 0,
           display: "flex", flexDirection: "column",
-          padding: "1.5rem 0 1.5rem 1.5rem",
-          gap: 12,
+          alignItems: "center", justifyContent: "center",
+          padding: "2rem 1rem 2rem 1.75rem",
+          gap: 14,
+          borderRight: `1px solid ${A}10`,
         }}>
           {posterUrl ? (
-            <div style={{
-              borderRadius: 16,
-              overflow: "hidden",
-              boxShadow: `0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px ${A}22`,
-              cursor: "pointer",
-              flexShrink: 0,
-            }} onClick={() => setTab("poster")} title="Click for full view">
+            <div
+              onClick={() => setTab("poster")}
+              title="Click for full view"
+              style={{
+                width: "100%",
+                borderRadius: 18,
+                overflow: "hidden",
+                boxShadow: `0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px ${A}30`,
+                cursor: "pointer",
+                transition: "transform 0.2s, box-shadow 0.2s",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLDivElement).style.transform = "scale(1.02)";
+                (e.currentTarget as HTMLDivElement).style.boxShadow = `0 40px 100px rgba(0,0,0,0.85), 0 0 0 2px ${A}55`;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
+                (e.currentTarget as HTMLDivElement).style.boxShadow = `0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px ${A}30`;
+              }}
+            >
               <img
                 src={posterUrl}
                 alt={movie}
-                style={{
-                  width: "100%",
-                  height: "auto",
-                  display: "block",
-                  objectFit: "contain",
-                }}
+                style={{ width: "100%", height: "auto", display: "block" }}
               />
             </div>
           ) : (
             <div style={{
-              borderRadius: 16, height: 300,
+              width: "100%", aspectRatio: "2/3",
+              borderRadius: 18,
               background: `linear-gradient(160deg, ${A}18 0%, ${palette.dark} 100%)`,
               border: `1px solid ${A}22`,
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <p style={{ fontSize: 11, color: A, opacity: 0.5, textAlign: "center", padding: "0 1rem" }}>No poster found</p>
+              <p style={{ fontSize: 11, color: A, opacity: 0.4, textAlign: "center", padding: "0 1rem" }}>
+                Set a film to see its poster
+              </p>
             </div>
           )}
-          <div>
-            <p style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: A, fontWeight: 700, marginBottom: 4, opacity: 0.7 }}>Now Watching</p>
-            <p style={{ fontSize: 13, fontWeight: 700, color: "#FFF", lineHeight: 1.3 }}>{movie}</p>
+          <div style={{ width: "100%", paddingLeft: 4 }}>
+            <p style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: A, fontWeight: 700, marginBottom: 5, opacity: 0.65 }}>Now Watching</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: "#FFF", lineHeight: 1.3 }}>{movie || "No film set"}</p>
+            {posterUrl && <p style={{ fontSize: 10, color: A, opacity: 0.5, marginTop: 6, cursor: "pointer" }} onClick={() => setTab("poster")}>View full poster →</p>}
           </div>
         </div>
 
