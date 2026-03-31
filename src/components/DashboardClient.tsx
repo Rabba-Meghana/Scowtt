@@ -139,19 +139,15 @@ export default function DashboardClient({ user }: DashboardProps) {
         movie: f.movie,
         time: new Date(f.generatedAt),
       }));
+      // Always show all DB facts; put latest at top if it is new
+      const seen = new Set<string>();
+      let merged = [...dbFacts];
       if (factResult.ok && factResult.data) {
         const latest = { text: factResult.data.factText, movie, time: new Date(factResult.data.generatedAt) };
-        // Merge latest with DB history, deduplicate
-        const seen = new Set<string>();
-        const merged = [latest, ...dbFacts].filter(f => {
-          if (seen.has(f.text)) return false;
-          seen.add(f.text);
-          return true;
-        }).slice(0, 8);
-        setFactHistory(merged);
-      } else {
-        setFactHistory(dbFacts.slice(0, 8));
+        merged = [latest, ...dbFacts];
       }
+      const deduped = merged.filter(f => { if (seen.has(f.text)) return false; seen.add(f.text); return true; }).slice(0, 20);
+      setFactHistory(deduped);
       setFactLoading(false);
     });
     return () => { cancelled = true; };
@@ -191,14 +187,14 @@ export default function DashboardClient({ user }: DashboardProps) {
       const dbFacts = (historyData.facts ?? []).map((f: { factText: string; generatedAt: string; movie: string }) => ({
         text: f.factText, movie: f.movie, time: new Date(f.generatedAt),
       }));
+      const seen = new Set<string>();
+      let merged = [...dbFacts];
       if (factResult.ok && factResult.data) {
         const latest = { text: factResult.data.factText, movie: trimmed, time: new Date(factResult.data.generatedAt) };
-        const seen = new Set<string>();
-        const merged = [latest, ...dbFacts].filter(f => { if (seen.has(f.text)) return false; seen.add(f.text); return true; }).slice(0, 8);
-        setFactHistory(merged);
-      } else {
-        setFactHistory(dbFacts.slice(0, 8));
+        merged = [latest, ...dbFacts];
       }
+      const deduped = merged.filter(f => { if (seen.has(f.text)) return false; seen.add(f.text); return true; }).slice(0, 20);
+      setFactHistory(deduped);
       setFactLoading(false);
     }
     setSaving(false);
@@ -564,12 +560,12 @@ export default function DashboardClient({ user }: DashboardProps) {
                 </div>
               )}
 
-              {/* Previous facts */}
+              {/* Fact history — all movies, all sessions */}
               {factHistory.length > 1 && !editing && (
                 <div style={card({ padding: "1.5rem" })}>
                   <div style={accentBar} />
-                  <p style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: A, opacity: 0.45, fontWeight: 700, marginBottom: 14 }}>Previous Facts</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 220, overflowY: "auto" }}>
+                  <p style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: A, opacity: 0.45, fontWeight: 700, marginBottom: 14 }}>Fact History</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 280, overflowY: "auto" }}>
                     {factHistory.slice(1).map((f, i) => (
                       <div key={i} style={{ padding: "12px 14px", borderRadius: 10, background: `${A}0C`, border: `1px solid ${A}16`, animation: "fadeUp 0.3s ease" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
