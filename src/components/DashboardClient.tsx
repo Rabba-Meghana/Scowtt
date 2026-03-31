@@ -372,17 +372,66 @@ export default function DashboardClient({ user }: DashboardProps) {
 
       <div style={{ display: "flex", flex: 1 }}>
 
-        {/* POSTER */}
-        <div style={{ width: "min(30vw, 340px)", flexShrink: 0, position: "relative", overflow: "hidden", minHeight: "calc(100vh - 60px)" }}>
+        {/* POSTER — full image, fade right into content */}
+        <div style={{
+          width: "min(28vw, 320px)", flexShrink: 0, position: "relative",
+          minHeight: "calc(100vh - 60px)", background: palette.dark,
+        }}>
           {posterUrl ? (
-            <img src={posterUrl} alt={movie} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", opacity: 0.9, cursor: "pointer" }} onClick={() => setTab("poster")} title="Click to view full poster" />
+            <>
+              {/* Full poster image — objectFit contain so nothing is cropped */}
+              <img
+                src={posterUrl}
+                alt={movie}
+                onClick={() => setTab("poster")}
+                title="Click to view full poster"
+                style={{
+                  position: "absolute",
+                  top: 0, left: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  objectPosition: "center top",
+                  cursor: "pointer",
+                  display: "block",
+                }}
+              />
+              {/* Bottom gradient — movie title legible */}
+              <div style={{
+                position: "absolute", bottom: 0, left: 0, right: 0,
+                height: "45%",
+                background: `linear-gradient(to top, ${palette.dark} 30%, transparent 100%)`,
+                pointerEvents: "none",
+              }} />
+              {/* Right fade — blends seamlessly into main content */}
+              <div style={{
+                position: "absolute", top: 0, right: 0, bottom: 0,
+                width: "55%",
+                background: `linear-gradient(to right, transparent 0%, ${palette.dark} 100%)`,
+                pointerEvents: "none",
+              }} />
+              {/* Top fade */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0,
+                height: "15%",
+                background: `linear-gradient(to bottom, ${palette.dark} 0%, transparent 100%)`,
+                pointerEvents: "none",
+              }} />
+            </>
           ) : (
-            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(160deg, ${A}18 0%, ${palette.dark} 70%)` }} />
+            <div style={{
+              position: "absolute", inset: 0,
+              background: `linear-gradient(160deg, ${A}12 0%, ${palette.dark} 100%)`,
+            }} />
           )}
-          <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to right, transparent 50%, ${palette.dark} 100%), linear-gradient(to top, ${palette.dark} 0%, transparent 20%)`, transition: "background 1.2s ease" }} />
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "3rem 1.5rem 1.75rem", background: `linear-gradient(to top, ${palette.dark} 25%, transparent)` }}>
-            <p style={{ fontSize: 9, letterSpacing: "0.24em", textTransform: "uppercase", color: A, fontWeight: 700, marginBottom: 8, opacity: 0.7 }}>Now Watching</p>
-            <p style={{ fontSize: 18, fontWeight: 800, color: "#FFF", lineHeight: 1.2, textTransform: "uppercase", letterSpacing: "0.03em", wordBreak: "break-word" }}>{movie}</p>
+          {/* Movie title at bottom */}
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, right: 0,
+            padding: "2.5rem 1.25rem 1.5rem",
+            pointerEvents: "none",
+          }}>
+            <p style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase", color: A, fontWeight: 700, marginBottom: 8, opacity: 0.8 }}>Now Watching</p>
+            <p style={{ fontSize: 16, fontWeight: 800, color: "#FFF", lineHeight: 1.2, textTransform: "uppercase", letterSpacing: "0.04em", wordBreak: "break-word", textShadow: "0 2px 12px rgba(0,0,0,0.8)" }}>{movie}</p>
           </div>
         </div>
 
