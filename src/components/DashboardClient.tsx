@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { signOut } from "next-auth/react";
 import {
   updateMovie as apiUpdateMovie,
   getFact as apiGetFact,
@@ -240,7 +241,7 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
             {t === "dashboard" ? "Dashboard" : "API"}
           </button>
         ))}
-        <a href="/api/auth/signout" style={{ padding: "5px 14px", borderRadius: 7, fontSize: 13, border: "1px solid rgba(255,255,255,0.07)", background: "transparent", color: "#7A7060", textDecoration: "none" }}>Sign out</a>
+        <button onClick={() => signOut({ callbackUrl: "/" })} style={{ padding: "5px 14px", borderRadius: 7, fontSize: 13, border: `1px solid ${A}44`, background: AM, color: A, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}>Logout</button>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, paddingLeft: 14, borderLeft: `1px solid ${A}18` }}>
           <Avatar src={user.image} name={user.name} size={30} accent={A} />
           <span style={{ fontSize: 9, fontWeight: 600, color: "#C8C0B0", maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1 }}>
@@ -252,7 +253,7 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
   );
 
   if (tab === "api") return (
-    <div style={{ minHeight: "100vh", backgroundColor: palette.dark, background: `radial-gradient(ellipse at 20% 0%, ${palette.mid}BB 0%, ${palette.dark} 55%)`, fontFamily: "'Inter',system-ui,sans-serif", color: "#E8E0D0", transition: "all 1.2s ease" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: palette.dark, background: `radial-gradient(ellipse at 20% 0%, ${palette.mid}BB 0%, ${palette.dark} 55%)`, fontFamily: "var(--ff, 'DM Sans', system-ui, sans-serif)", color: "#E8E0D0", transition: "all 1.2s ease" }}>
       <style>{`@keyframes pulse{0%,100%{opacity:.3}50%{opacity:.7}}`}</style>
       <Nav />
       <div style={{ padding: "2.5rem", maxWidth: 860 }}>
@@ -261,7 +262,7 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
         {[
           { method: "GET", path: "/api/me", desc: "Returns the authenticated user profile including name, email, image URL and favoriteMovie.", req: "Cookie: session (auto)", res: `{ "id":"cuid...", "name":"Meghana",\n  "favoriteMovie":"The Dark Knight" }` },
           { method: "PUT", path: "/api/me/movie", desc: "Updates the user's favourite movie. Validates: non-empty string, 1-100 chars.", req: `{ "movie": "Dune" }`, res: `{ "favoriteMovie":"Dune" }  // 200\n{ "error":"..." }           // 400/401` },
-          { method: "GET", path: "/api/fact", desc: "Generates a movie fact via OpenAI GPT-4o-mini. No caching - every click generates a fresh fact.", req: "Cookie: session (auto)", res: `{ "factText":"...", "generatedAt":"2025-..." }` },
+          { method: "GET", path: "/api/fact", desc: "Returns a movie fact. 60-second server cache per user+movie. Uses isGenerating flag to prevent burst duplicates. Falls back to last cached fact if OpenAI fails.", req: "Cookie: session (auto)", res: `{ "factText":"...", "generatedAt":"2026-...", "cached": false }` },
         ].map(({ method, path, desc, req, res }) => (
           <div key={path} style={card({ padding: "1.5rem", marginBottom: "1.25rem" })}>
             <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
@@ -288,7 +289,7 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
       minHeight: "100vh", backgroundColor: palette.dark,
       background: `radial-gradient(ellipse at 20% 0%, ${palette.mid}BB 0%, ${palette.dark} 55%)`,
       display: "flex", flexDirection: "column",
-      fontFamily: "'Inter',system-ui,sans-serif", color: "#E8E0D0",
+      fontFamily: "var(--ff, 'DM Sans', system-ui, sans-serif)", color: "#E8E0D0",
       transition: "background 1.2s ease, background-color 1.2s ease",
     }}>
       <style>{`
