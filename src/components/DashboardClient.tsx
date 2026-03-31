@@ -7,17 +7,16 @@ import {
   getFact as apiGetFact,
   invalidateFactCache,
 } from "@/lib/api";
-import { getMovieTheme } from "@/lib/movieThemes";
 
 interface DashboardProps {
   user: {
     id: string;
     name: string | null;
-    email: string | null;
+    email: string;
     image: string | null;
-    favoriteMovie: string;
+    favoriteMovie: string | null;
+    onboarded: boolean;
   };
-  initialFact: string | null;
 }
 
 interface Palette { dark: string; mid: string; accent: string; label?: string; }
@@ -66,7 +65,7 @@ function Avatar({ src, name, size = 48, accent }: { src: string | null; name: st
   );
 }
 
-export default function DashboardClient({ user, initialFact }: DashboardProps) {
+export default function DashboardClient({ user }: DashboardProps) {
   const safeMovie = user?.favoriteMovie ?? "";
 
   const [movie,     setMovie]     = useState(safeMovie);
@@ -76,7 +75,7 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
   const [editError, setEditError] = useState<string | null>(null);
 
   const [factHistory, setFactHistory] = useState<FactEntry[]>(
-    initialFact ? [{ text: initialFact, movie: safeMovie, time: new Date() }] : []
+    []
   );
   const [factLoading, setFactLoading] = useState(false);
 
@@ -108,8 +107,6 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
         if (cancelled || !data.posterUrl) return;
         console.log(`[client] Got poster URL: ${data.posterUrl}`);
         setPosterUrl(data.posterUrl);
-        const themeLabel = getMovieTheme(movie).label;
-        
         if (paletteLockRef.current !== movie) {
           const p = await fetchPalette(data.posterUrl);
           if (!cancelled && p.accent !== DEFAULT_PALETTE.accent) {
@@ -143,10 +140,10 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
     return () => { cancelled = true; };
   }, [movie]);
 
-  // Auto-generate fact on first load only if no initialFact
+  // Auto-generate fact on first load
   const didInit = useRef(false);
   useEffect(() => {
-    if (didInit.current || initialFact) { didInit.current = true; return; }
+    if (didInit.current) { didInit.current = true; return; }
     didInit.current = true;
     if (!movie) return;
     let cancelled = false;
@@ -296,7 +293,7 @@ export default function DashboardClient({ user, initialFact }: DashboardProps) {
                 <h2 style={{ fontFamily: "var(--fp, 'Playfair Display', serif)", fontSize: "clamp(28px,4vw,52px)", fontWeight: 900, color: "#fff", lineHeight: 1.05, letterSpacing: "-0.02em", marginBottom: 20, textTransform: "uppercase" }}>{movie}</h2>
                 <div style={{ width: 40, height: 2, background: A, borderRadius: 2, marginBottom: 24, boxShadow: `0 0 12px ${A}88` }} />
                 <p style={{ fontSize: 13, color: "#9A9080", lineHeight: 1.7, marginBottom: 28, fontWeight: 300 }}>
-                  Theme detected: <span style={{ color: A, fontWeight: 600 }}>{palette.label || "Cinema"}</span>
+                  All UI colors derived from your poster.
                   <br />All UI colors are derived algorithmically from this poster.
                 </p>
                 <button onClick={() => setTab("dashboard")} style={{
