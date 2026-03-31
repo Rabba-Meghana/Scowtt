@@ -372,66 +372,45 @@ export default function DashboardClient({ user }: DashboardProps) {
 
       <div style={{ display: "flex", flex: 1 }}>
 
-        {/* POSTER — full image, fade right into content */}
+        {/* POSTER CARD — full image, no crop, no fade */}
         <div style={{
-          width: "min(32vw, 380px)", flexShrink: 0, position: "relative",
-          minHeight: "calc(100vh - 60px)", background: palette.dark,
+          width: 220, flexShrink: 0,
+          display: "flex", flexDirection: "column",
+          padding: "1.5rem 0 1.5rem 1.5rem",
+          gap: 12,
         }}>
           {posterUrl ? (
-            <>
-              {/* Full poster image — objectFit contain so nothing is cropped */}
+            <div style={{
+              borderRadius: 16,
+              overflow: "hidden",
+              boxShadow: `0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px ${A}22`,
+              cursor: "pointer",
+              flexShrink: 0,
+            }} onClick={() => setTab("poster")} title="Click for full view">
               <img
                 src={posterUrl}
                 alt={movie}
-                onClick={() => setTab("poster")}
-                title="Click to view full poster"
                 style={{
-                  position: "absolute",
-                  top: 0, left: 0,
                   width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  objectPosition: "center top",
-                  cursor: "pointer",
+                  height: "auto",
                   display: "block",
+                  objectFit: "contain",
                 }}
               />
-              {/* Bottom gradient — movie title legible */}
-              <div style={{
-                position: "absolute", bottom: 0, left: 0, right: 0,
-                height: "30%",
-                background: `linear-gradient(to top, ${palette.dark} 20%, transparent 100%)`,
-                pointerEvents: "none",
-              }} />
-              {/* Right fade — only last 25% fades, rest fully visible */}
-              <div style={{
-                position: "absolute", top: 0, right: 0, bottom: 0,
-                width: "28%",
-                background: `linear-gradient(to right, transparent 0%, ${palette.dark} 100%)`,
-                pointerEvents: "none",
-              }} />
-              {/* Top fade */}
-              <div style={{
-                position: "absolute", top: 0, left: 0, right: 0,
-                height: "8%",
-                background: `linear-gradient(to bottom, ${palette.dark} 0%, transparent 100%)`,
-                pointerEvents: "none",
-              }} />
-            </>
+            </div>
           ) : (
             <div style={{
-              position: "absolute", inset: 0,
-              background: `linear-gradient(160deg, ${A}12 0%, ${palette.dark} 100%)`,
-            }} />
+              borderRadius: 16, height: 300,
+              background: `linear-gradient(160deg, ${A}18 0%, ${palette.dark} 100%)`,
+              border: `1px solid ${A}22`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <p style={{ fontSize: 11, color: A, opacity: 0.5, textAlign: "center", padding: "0 1rem" }}>No poster found</p>
+            </div>
           )}
-          {/* Movie title at bottom */}
-          <div style={{
-            position: "absolute", bottom: 0, left: 0, right: 0,
-            padding: "2.5rem 1.25rem 1.5rem",
-            pointerEvents: "none",
-          }}>
-            <p style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase", color: A, fontWeight: 700, marginBottom: 8, opacity: 0.8 }}>Now Watching</p>
-            <p style={{ fontSize: 16, fontWeight: 800, color: "#FFF", lineHeight: 1.2, textTransform: "uppercase", letterSpacing: "0.04em", wordBreak: "break-word", textShadow: "0 2px 12px rgba(0,0,0,0.8)" }}>{movie}</p>
+          <div>
+            <p style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: A, fontWeight: 700, marginBottom: 4, opacity: 0.7 }}>Now Watching</p>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#FFF", lineHeight: 1.3 }}>{movie}</p>
           </div>
         </div>
 
