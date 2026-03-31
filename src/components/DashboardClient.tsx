@@ -79,7 +79,7 @@ export default function DashboardClient({ user }: DashboardProps) {
   );
   const [factLoading, setFactLoading] = useState(false);
 
-  const [tab,       setTab]       = useState<"dashboard" | "api">("dashboard");
+  const [tab,       setTab]       = useState<"dashboard" | "api" | "poster">("dashboard");
   const [posterUrl, setPosterUrl] = useState<string | null>(null);
   const [palette,   setPalette]   = useState<Palette>(DEFAULT_PALETTE);
 
@@ -237,7 +237,7 @@ export default function DashboardClient({ user }: DashboardProps) {
             background: tab === t ? AM : "transparent",
             color: tab === t ? A : "#7A7060", transition: "all 0.25s",
           }}>
-            {t === "dashboard" ? "Dashboard" : "API"}
+            {t === "dashboard" ? "Dashboard" : t === "api" ? "API" : "Poster"}
           </button>
         ))}
         <button onClick={() => signOut({ callbackUrl: "/" })} style={{ padding: "5px 14px", borderRadius: 7, fontSize: 13, border: `1px solid ${A}44`, background: AM, color: A, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}>Logout</button>
